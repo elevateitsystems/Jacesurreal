@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 interface Track {
   id: number;
   title: string;
@@ -14,7 +12,6 @@ interface Track {
   disliked: boolean;
   bpm: number;
   waveform: number[];
-  thumbnail?: string;
 }
 
 interface TrackCardProps {
@@ -45,7 +42,10 @@ export default function TrackCard({
   formatTime,
 }: TrackCardProps) {
   return (
-    <div className={`track-card compact ${isPlaying ? "playing" : ""}`}>
+    <div
+      className={`track-card compact ${isPlaying ? "playing" : ""}`}
+      style={{ animationDelay: `${idx * 0.1}s` } as any}
+    >
       <div className="track-inner">
         <div className="track-header">
           <div className="play-btn-container">
@@ -65,17 +65,6 @@ export default function TrackCard({
                 </svg>
               )}
             </button>
-          </div>
-          
-          {/* New Media Thumbnail Section */}
-          <div className="track-thumbnail">
-             <Image 
-                src={track.thumbnail || "/dj.jpg"} 
-                alt={track.title} 
-                width={60} 
-                height={60} 
-                className="rounded-lg object-cover"
-             />
           </div>
 
           <div className="track-info">
@@ -103,7 +92,10 @@ export default function TrackCard({
           </div>
         </div>
 
-        <div className="waveform-container" onClick={(e) => onSeek(e, track.id)}>
+        <div
+          className="waveform-container"
+          onClick={(e) => onSeek(e, track.id)}
+        >
           <div className="waveform">
             {track.waveform.map((h, i) => {
               const barProgress = (i / track.waveform.length) * 100;
@@ -131,9 +123,11 @@ export default function TrackCard({
               <svg viewBox="0 0 24 24" stroke="currentColor">
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
-              <span className="plays-count">{track.plays.toLocaleString()}</span>
+              <span className="plays-count">
+                {track.plays.toLocaleString()}
+              </span>
             </button>
-            
+
             <button
               className={`stat-btn like-btn ${track.liked ? "active" : ""}`}
               onClick={() => onLike(track.id)}
@@ -143,7 +137,7 @@ export default function TrackCard({
               </svg>
               <span>{track.likes.toLocaleString()}</span>
             </button>
-            
+
             <button
               className={`stat-btn dislike-btn ${track.disliked ? "active" : ""}`}
               onClick={() => onDislike(track.id)}
@@ -154,11 +148,8 @@ export default function TrackCard({
               <span>{track.dislikes.toLocaleString()}</span>
             </button>
           </div>
-          
-          <button
-            className="stat-btn share-btn"
-            onClick={() => onShare(track)}
-          >
+
+          <button className="stat-btn share-btn" onClick={() => onShare(track)}>
             <svg viewBox="0 0 24 24" stroke="currentColor">
               <circle cx="18" cy="5" r="3" />
               <circle cx="6" cy="12" r="3" />
