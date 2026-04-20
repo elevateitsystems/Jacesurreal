@@ -21,7 +21,7 @@ const initialTracks = [
     disliked: false,
     bpm: 128,
     thumbnail: "/dj.jpg",
-    waveform: Array.from({ length: 150 }, () => Math.random() * 0.7 + 0.2),
+    waveform: Array.from({ length: 150 }, (_, i) => Math.round((0.4 + 0.3 * Math.sin(i * 0.15) + Math.cos(i * 0.4) * 0.1 + 0.15) * 10000) / 10000),
   },
   {
     id: 2,
@@ -35,7 +35,7 @@ const initialTracks = [
     disliked: false,
     bpm: 124,
     thumbnail: "/dj.jpg",
-    waveform: Array.from({ length: 150 }, () => Math.random() * 0.7 + 0.2),
+    waveform: Array.from({ length: 150 }, (_, i) => Math.round((0.5 + 0.2 * Math.sin(i * 0.2) + Math.cos(i * 0.5) * 0.15 + 0.1) * 10000) / 10000),
   },
   {
     id: 3,
@@ -49,7 +49,7 @@ const initialTracks = [
     disliked: false,
     bpm: 130,
     thumbnail: "/dj.jpg",
-    waveform: Array.from({ length: 150 }, () => Math.random() * 0.7 + 0.2),
+    waveform: Array.from({ length: 150 }, (_, i) => Math.round((0.4 + 0.3 * Math.sin(i * 0.1) + Math.cos(i * 0.3) * 0.2 + 0.05) * 10000) / 10000),
   },
 ];
 

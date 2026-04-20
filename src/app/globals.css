@@ -776,7 +776,7 @@ body {
 
 .waveform {
     display: flex;
-    align-items: center;
+    align-items: flex-end; /* Grows from bottom */
     justify-content: space-between;
     height: 100%;
     gap: 1.2px;
@@ -788,6 +788,7 @@ body {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 4px;
     transition: all 0.2s ease;
+    transform-origin: bottom; /* Scales from bottom */
     position: relative;
     height: 100%;
 }

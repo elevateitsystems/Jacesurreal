@@ -50,6 +50,7 @@ export default function TrackCard({
         <div className="track-header">
           <div className="play-btn-container">
             <div className="vinyl"></div>
+            <div className={`sonic-boom ${isPlaying ? "active" : ""}`}></div>
             <button
               className={`play-btn ${isPlaying ? "playing" : ""}`}
               onClick={() => onTogglePlay(track)}
@@ -104,7 +105,7 @@ export default function TrackCard({
                 <div
                   key={i}
                   className={`waveform-bar ${isPlayed ? "played" : ""}`}
-                  style={{ height: `${h * 100}%`, "--i": i } as any}
+                  style={{ height: `${(h * 100).toFixed(4)}%`, "--i": i.toString() } as any}
                 ></div>
               );
             })}
