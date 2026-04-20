@@ -1,12 +1,12 @@
 "use client";
 
-import DJSection from "@/components/DJSection";
+import { useState, useMemo, useCallback } from "react";
 import Header from "@/components/Header";
+import DJSection from "@/components/DJSection";
 import MusicSection from "@/components/MusicSection";
 import SuperPhone from "@/components/SuperPhone";
 import Visualizer from "@/components/Visualizer";
 import useToast from "@/lib/useToast";
-import { useMemo, useState } from "react";
 
 const initialTracks = [
     {
@@ -18,16 +18,26 @@ const initialTracks = [
         likes: 342,
         dislikes: 12,
         liked: false, disliked: false, bpm: 128, 
+        thumbnail: "/dj.jpg",
         waveform: [0.3, 0.5, 0.7, 0.4, 0.8, 0.6, 0.9, 0.5, 0.7, 0.8, 0.4, 0.6, 0.9, 0.7, 0.5, 0.8, 0.6, 0.4, 0.7, 0.9, 0.5, 0.6, 0.8, 0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.4, 0.7, 0.5, 0.6, 0.8, 0.9, 0.4, 0.7, 0.6, 0.5, 0.8]
     },
-    { id: 2, title: "Electric Dreams", src: "/audio/track1.mp3", duration: 0, plays: 892, likes: 215, dislikes: 8, liked: false, disliked: false, bpm: 124, waveform: [0.4, 0.6, 0.5, 0.8, 0.7, 0.4, 0.9, 0.6, 0.5, 0.7, 0.8, 0.4, 0.6, 0.9, 0.5, 0.7, 0.8, 0.6, 0.4, 0.5, 0.9, 0.7, 0.6, 0.8, 0.4, 0.5, 0.7, 0.9, 0.6, 0.8, 0.5, 0.4, 0.7, 0.6, 0.8, 0.9, 0.5, 0.4, 0.7, 0.6] },
-    { id: 3, title: "Neon Pulse", src: "/audio/track1.mp3", duration: 0, plays: 1583, likes: 478, dislikes: 15, liked: false, disliked: false, bpm: 130, waveform: [0.5, 0.7, 0.4, 0.8, 0.6, 0.9, 0.5, 0.7, 0.4, 0.6, 0.8, 0.9, 0.5, 0.7, 0.6, 0.4, 0.8, 0.9, 0.7, 0.5, 0.6, 0.4, 0.8, 0.7, 0.9, 0.5, 0.6, 0.4, 0.8, 0.7, 0.5, 0.9, 0.6, 0.4, 0.8, 0.7, 0.5, 0.6, 0.9, 0.4] }
+    { id: 2, title: "Electric Dreams", src: "/audio/track1.mp3", duration: 0, plays: 892, likes: 215, dislikes: 8, liked: false, disliked: false, bpm: 124, thumbnail: "/dj.jpg", waveform: [0.4, 0.6, 0.5, 0.8, 0.7, 0.4, 0.9, 0.6, 0.5, 0.7, 0.8, 0.4, 0.6, 0.9, 0.5, 0.7, 0.8, 0.6, 0.4, 0.5, 0.9, 0.7, 0.6, 0.8, 0.4, 0.5, 0.7, 0.9, 0.6, 0.8, 0.5, 0.4, 0.7, 0.6, 0.8, 0.9, 0.5, 0.4, 0.7, 0.6] },
+    { id: 3, title: "Neon Pulse", src: "/audio/track1.mp3", duration: 0, plays: 1583, likes: 478, dislikes: 15, liked: false, disliked: false, bpm: 130, thumbnail: "/dj.jpg", waveform: [0.5, 0.7, 0.4, 0.8, 0.6, 0.9, 0.5, 0.7, 0.4, 0.6, 0.8, 0.9, 0.5, 0.7, 0.6, 0.4, 0.8, 0.9, 0.7, 0.5, 0.6, 0.4, 0.8, 0.7, 0.9, 0.5, 0.6, 0.4, 0.8, 0.7, 0.5, 0.9, 0.6, 0.4, 0.8, 0.7, 0.5, 0.6, 0.9, 0.4] }
 ];
 
 export default function Home() {
   const [tracks, setTracks] = useState(initialTracks);
   const [currentPlayingId, setCurrentPlayingId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const { showToast, ToastContainer } = useToast();
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query.toLowerCase());
+  }, []);
+
+  const filteredTracks = useMemo(() => {
+    return tracks.filter(track => track.title.toLowerCase().includes(searchQuery));
+  }, [tracks, searchQuery]);
 
   const totalPlays = useMemo(() => tracks.reduce((s, t) => s + t.plays, 0).toLocaleString(), [tracks]);
   const totalLikes = useMemo(() => tracks.reduce((s, t) => s + t.likes, 0).toLocaleString(), [tracks]);
@@ -35,12 +45,13 @@ export default function Home() {
   return (
     <>
       <div className="container">
-        <Header />
+        <Header onSearch={handleSearch} />
         
         <div className="main-content">
           <DJSection totalPlays={totalPlays} totalLikes={totalLikes} />
           <MusicSection 
-            tracks={tracks}
+            tracks={filteredTracks}
+            allTracks={tracks}
             setTracks={setTracks}
             currentPlayingId={currentPlayingId} 
             setCurrentPlayingId={setCurrentPlayingId} 
@@ -74,7 +85,7 @@ export default function Home() {
             </a>
             <a className="social-link" href="#" aria-label="YouTube">
               <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93$.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93-.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
               </svg>
             </a>
           </div>

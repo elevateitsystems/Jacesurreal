@@ -1,15 +1,27 @@
 "use client";
 
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Search } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useDebounce } from "@/lib/useDebounce";
 
-export default function Header() {
+interface HeaderProps {
+    onSearch: (query: string) => void;
+}
+
+export default function Header({ onSearch }: HeaderProps) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [isAnimating, setIsAnimating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   useEffect(() => {
     document.body.classList.toggle("light-theme", theme === "light");
   }, [theme]);
+
+  useEffect(() => {
+    onSearch(debouncedSearch);
+  }, [debouncedSearch, onSearch]);
 
   const toggleTheme = () => {
     setTheme(prev => prev === "dark" ? "light" : "dark");
@@ -21,7 +33,7 @@ export default function Header() {
   };
 
   return (
-    <header>
+    <header className="header-modern">
       <div 
         className="logo" 
         onClick={animateLogo}
@@ -29,6 +41,22 @@ export default function Header() {
       >
         DJ SURREAL
       </div>
+      
+      {/* Search Bar Implementation */}
+      <div className="search-container">
+        <label htmlFor="track-search" className="search-icon">
+            <Search size={18} />
+        </label>
+        <input 
+            id="track-search"
+            type="text" 
+            placeholder="Search tracks..." 
+            className="search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       <div className="header-actions">
         <button className="header-btn" id="themeBtn" onClick={toggleTheme}>
           {theme === "dark" ? (

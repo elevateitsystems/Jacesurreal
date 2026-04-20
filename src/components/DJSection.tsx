@@ -1,34 +1,43 @@
 "use client";
 
+import { useThrottle } from "@/lib/useThrottle";
+import { useRef } from "react";
+
 interface Props {
     totalPlays: string;
     totalLikes: string;
 }
 
 export default function DJSection({ totalPlays, totalLikes }: Props) {
-    const tiltCard = (e: React.MouseEvent<HTMLDivElement>) => {
-        const card = e.currentTarget;
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
+    const cardRef = useRef<HTMLDivElement>(null);
+
+    const handleTilt = useThrottle((x: number, y: number, width: number, height: number) => {
+        if (!cardRef.current) return;
+        const centerX = width / 2;
+        const centerY = height / 2;
         const rotateX = (y - centerY) / 20;
         const rotateY = (centerX - x) / 20;
-        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+        cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+    }, 16); // ~60fps throttle
+
+    const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        handleTilt(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
     };
 
-    const resetTilt = (e: React.MouseEvent<HTMLDivElement>) => {
-        const card = e.currentTarget;
-        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+    const resetTilt = () => {
+        if (cardRef.current) {
+            cardRef.current.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+        }
     };
 
     return (
         <div className="dj-section">
             <div 
+                ref={cardRef}
                 className="dj-photo-container" 
                 id="djPhoto" 
-                onMouseMove={tiltCard} 
+                onMouseMove={onMouseMove} 
                 onMouseLeave={resetTilt}
             >
                 <div className="dj-photo-inner">

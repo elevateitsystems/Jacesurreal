@@ -1,68 +1,71 @@
 "use client";
 
 import { useState } from "react";
+import { Smartphone, Zap, Shield, Sparkles } from "lucide-react";
 
 export default function SuperPhone() {
+    const [isSubscribed, setIsSubscribed] = useState(false);
     const [phone, setPhone] = useState("");
-    const [subscribed, setSubscribed] = useState(false);
 
     const handleSubscribe = (e: React.FormEvent) => {
         e.preventDefault();
-        setSubscribed(true);
-        // Simulate success state like in index.html
+        if (!phone) return;
+        
+        setIsSubscribed(true);
+        setTimeout(() => {
+            setIsSubscribed(false);
+            setPhone("");
+        }, 5000);
     };
 
     return (
-        <section className="superphone-section">
-            <div className="superphone-card">
-                <div className="superphone-icon">
-                    <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                </div>
-                <h2 className="superphone-title">Join The Inner Circle</h2>
-                <p className="superphone-subtitle">
-                    Get exclusive drops, VIP access to shows, and behind‑the‑scenes content 
-                    delivered straight to your phone.
-                </p>
-                <form className="superphone-form" onSubmit={handleSubscribe}>
-                    <div className="phone-input-container">
-                        <input 
-                            type="tel" 
-                            className="superphone-input" 
-                            placeholder={subscribed ? "Subscribed! 🎉" : "Enter your number"} 
-                            required 
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            disabled={subscribed}
-                        />
+        <section className="superphone-section-modern">
+            <div className="superphone-card-premium">
+                <div className="card-glow-effect"></div>
+                <div className="superphone-content">
+                    <div className="superphone-badge">
+                        <Sparkles size={14} className="mr-2" />
+                        EXCLUSIVE ACCESS
                     </div>
-                    <button 
-                        type="submit" 
-                        className="superphone-btn"
-                        style={subscribed ? { background: 'linear-gradient(135deg, #10b981, #059669)' } : {}}
-                    >
-                        {subscribed ? 'Subscribed! 🎉' : 'Subscribe'}
-                    </button>
-                </form>
-                <div className="superphone-features">
-                    <div className="feature-tag">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        Exclusive Drops
-                    </div>
-                    <div className="feature-tag">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        Show Alerts
-                    </div>
-                    <div className="feature-tag">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        VIP Access
+                    <h2 className="superphone-title">JOIN THE INNER CIRCLE</h2>
+                    <p className="superphone-description">
+                        Receive unreleased demos, early tour dates, and exclusive community content directly to your phone.
+                    </p>
+
+                    <form className="superphone-form-modern" onSubmit={handleSubscribe}>
+                        <div className="phone-input-wrapper">
+                            <Smartphone className="input-icon" size={20} />
+                            <input 
+                                type="tel" 
+                                placeholder="+1 (555) 000-0000" 
+                                className="superphone-input-refined"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                disabled={isSubscribed}
+                            />
+                        </div>
+                        <button 
+                            type="submit" 
+                            className={`superphone-btn-premium ${isSubscribed ? 'success' : ''}`}
+                            disabled={isSubscribed}
+                        >
+                            {isSubscribed ? 'WELCOME! 🎉' : 'GET ACCESS'}
+                        </button>
+                    </form>
+
+                    <div className="superphone-features-grid">
+                        <div className="feature-item">
+                            <Zap size={18} className="text-primary" />
+                            <span>First to Play</span>
+                        </div>
+                        <div className="feature-item">
+                            <Shield size={18} className="text-secondary" />
+                            <span>Privacy First</span>
+                        </div>
+                        <div className="feature-item">
+                            <Sparkles size={18} className="text-accent" />
+                            <span>NFT Drops</span>
+                        </div>
                     </div>
                 </div>
             </div>
