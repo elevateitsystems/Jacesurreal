@@ -6,6 +6,7 @@ import {
   Save,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from "lucide-react";
 
 interface musicTableProps {
@@ -45,6 +46,7 @@ export default function MusicTable({
             </p>
           </div>
           <div className="admin-search-wrapper relative w-[300px]">
+            <Search size={20} className="absolute left-3 top-3 text-white/50" />
             <input
               type="text"
               placeholder="Filter tracks..."
