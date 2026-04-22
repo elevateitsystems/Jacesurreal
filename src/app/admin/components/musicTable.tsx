@@ -36,7 +36,7 @@ export default function MusicTable({
   return (
     <main className="admin-content min-h-[700px]">
       <div className="admin-card track-editor full-height bg-[#0a0a0f]/60 backdrop-blur-[20px] border border-white/5 rounded-[24px] p-8 flex flex-col">
-        <div className="content-header-row flex justify-between items-center mb-8 pb-6 border-b border-white/5">
+        <div className="content-header-row flex justify-between items-start mb-8 pb-6 border-b border-white/5">
           <div className="card-header">
             <h2 className="text-xl mb-1 text-white">Manage Catalog</h2>
             <p className="text-white/50 text-[0.95rem]">

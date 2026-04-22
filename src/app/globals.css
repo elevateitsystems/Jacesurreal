@@ -2329,9 +2329,9 @@ footer {
 .content-header-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: start;
     margin-bottom: 32px;
-    padding-bottom: 24px;
+    padding-bottom: 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
