@@ -28,7 +28,7 @@ export default function AuthPage() {
               <label className="flex items-center gap-2 text-[0.85rem] text-white/50 font-medium">
                 <User size={16} /> Full Name
               </label>
-              <input type="text" placeholder="Jace Surreal" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white text-[0.95rem] transition-all focus:outline-none focus:bg-white/10 focus:border-primary" />
+              <input type="text" placeholder="Jace Surreal" className="bg-white/5 border border-white/10 rounded-sm px-4 py-3.5 text-white text-[0.95rem] transition-all focus:outline-none focus:bg-white/10 focus:border-primary" />
             </div>
           )}
 
@@ -36,17 +36,17 @@ export default function AuthPage() {
             <label className="flex items-center gap-2 text-[0.85rem] text-white/50 font-medium">
               <Mail size={16} /> Email Address
             </label>
-            <input type="email" placeholder="hello@jacesurreal.com" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white text-[0.95rem] transition-all focus:outline-none focus:bg-white/10 focus:border-primary" />
+            <input type="email" placeholder="hello@jacesurreal.com" className="bg-white/5 border border-white/10 rounded-sm px-4 py-3.5 text-white text-[0.95rem] transition-all focus:outline-none focus:bg-white/10 focus:border-primary" />
           </div>
 
           <div className="input-group flex flex-col gap-2.5">
             <label className="flex items-center gap-2 text-[0.85rem] text-white/50 font-medium">
               <Lock size={16} /> Password
             </label>
-            <input type="password" placeholder="••••••••" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white text-[0.95rem] transition-all focus:outline-none focus:bg-white/10 focus:border-primary" />
+            <input type="password" placeholder="••••••••" className="bg-white/5 border border-white/10 rounded-sm px-4 py-3.5 text-white text-[0.95rem] transition-all focus:outline-none focus:bg-white/10 focus:border-primary" />
           </div>
 
-          <button className="submit-btn mt-3 bg-primary-gradient text-white border-none rounded-xl p-4 text-base font-semibold cursor-pointer flex items-center justify-center gap-2.5 transition-all shadow-[0_10px_30px_rgba(255,45,85,0.3)] hover:translate-y-[-2px]">
+          <button className="submit-btn mt-3 bg-primary-gradient text-white border-none rounded-sm p-4 text-base font-semibold cursor-pointer flex items-center justify-center gap-2.5 transition-all shadow-[0_10px_30px_rgba(255,45,85,0.3)] hover:translate-y-[-2px]">
             {mode === "login" ? "Sign In" : "Register"}
             <ArrowRight size={18} />
           </button>
@@ -57,7 +57,7 @@ export default function AuthPage() {
         </div>
         
         <div className="social-auth-single flex justify-center mt-2">
-          <button className="social-btn google-btn w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white text-[0.95rem] font-medium flex items-center justify-center gap-3 transition-all hover:bg-white/10">
+          <button className="social-btn google-btn w-full bg-white/5 border border-white/10 rounded-sm px-4 py-3.5 text-white text-[0.95rem] font-medium flex items-center justify-center gap-3 transition-all hover:bg-white/10">
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path
                 fill="currentColor"

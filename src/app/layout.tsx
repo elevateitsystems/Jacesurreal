@@ -44,7 +44,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${outfit.variable} ${bebasNeue.variable} antialiased`}>
+      <body className={`${outfit.variable} ${bebasNeue.variable} antialiased bg-black`}>
         <CustomCursor />
         <BackgroundOrbs />
         <div className="noise-overlay" />

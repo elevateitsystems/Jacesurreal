@@ -7,18 +7,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Trash2,
 } from "lucide-react";
+import { Track } from "@/lib/mockData";
 
-interface musicTableProps {
+interface MusicTableProps {
   isLoading?: boolean;
-  filteredTracks?: any[];
+  filteredTracks?: Track[];
   setSearchQuery?: (query: string) => void;
-  handleUpdate?: (id: number, field: "plays" | "likes", value: string) => void;
-  paginatedTracks?: any[];
+  handleUpdate?: (id: string, field: "plays" | "likes" | "dislikes", value: string) => void;
+  paginatedTracks?: Track[];
   totalPages?: number;
   searchQuery?: string;
   currentPage?: number;
-
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
 }
 
@@ -32,30 +33,31 @@ export default function MusicTable({
   searchQuery,
   currentPage,
   setCurrentPage,
-}: musicTableProps) {
+}: MusicTableProps) {
   return (
     <main className="admin-content min-h-[700px]">
-      <div className="admin-card track-editor full-height bg-[#0a0a0f]/60 backdrop-blur-[20px] border border-white/5 rounded-[24px] p-8 flex flex-col">
-        <div className="content-header-row flex justify-between items-start mb-8 pb-6 border-b border-white/5">
+      <div className="admin-card track-editor full-height bg-surface border border-border-subtle rounded-sm p-8 flex flex-col">
+        <div className="content-header-row flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b border-border-subtle">
           <div className="card-header">
-            <h2 className="text-xl mb-1 text-white">Manage Catalog</h2>
-            <p className="text-white/50 text-[0.95rem]">
+            <h2 className="text-3xl mb-1 text-white font-bebas tracking-widest">Manage Catalog</h2>
+            <p className="text-white/50 text-sm">
               {isLoading
                 ? "Searching..."
                 : `${filteredTracks?.length} tracks found`}
             </p>
           </div>
-          <div className="admin-search-wrapper relative w-[300px]">
+          <div className="admin-search-wrapper relative w-full sm:w-[300px]">
             <Search size={20} className="absolute left-3 top-3 text-white/50" />
             <input
               type="text"
               placeholder="Filter tracks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery && setSearchQuery(e.target.value)}
-              className="w-full bg-white/3 border border-white/1 px-4 py-3 rounded-xl text-white text-[0.9rem] focus:outline-none focus:border-primary focus:shadow-[0_0_0_4px_rgba(255,45,85,0.1)] transition-all"
+              className="w-full bg-black/30 border border-border-subtle px-10 py-3 rounded-sm text-white text-[0.9rem] focus:outline-none focus:border-primary transition-all"
             />
           </div>
         </div>
+
         {/* track list */}
         <div
           className={`track-list-admin scrollable flex flex-col gap-4 max-h-[520px] overflow-y-auto pr-2.5 ${isLoading ? "opacity-50" : ""}`}
@@ -63,25 +65,25 @@ export default function MusicTable({
           {paginatedTracks?.map((track) => (
             <div
               key={track.id}
-              className="admin-track-item flex justify-between items-center bg-white/2 p-6 rounded-2xl border border-transparent transition-all hover:bg-white/4 hover:border-white/10"
+              className="admin-track-item flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-black/30 p-6 rounded-sm border border-border-subtle transition-all hover:border-white/20"
             >
               <div className="track-info-simple flex items-center gap-5">
-                <div className="track-icon w-11 h-11 bg-primary-gradient rounded-xl flex items-center justify-center text-white">
+                <div className="track-icon w-12 h-12 bg-surface border border-border-subtle rounded-sm flex items-center justify-center text-white/50">
                   <Music size={20} />
                 </div>
                 <div>
-                  <h3 className="text-[1.1rem] font-semibold text-white">
+                  <h3 className="text-[1.1rem] font-medium text-white truncate max-w-[200px]">
                     {track.title}
                   </h3>
-                  <span className="track-id text-[0.75rem] text-white/50 font-mono">
-                    ID: #{track.id}
+                  <span className="track-id text-xs text-white/50 font-mono">
+                    ID: {track.id}
                   </span>
                 </div>
               </div>
 
-              <div className="track-inputs flex items-end gap-5">
-                <div className="input-field-admin flex flex-col gap-2">
-                  <label className="flex items-center gap-1.5 text-[0.75rem] text-white/50 uppercase">
+              <div className="track-inputs flex flex-wrap items-end gap-4 w-full lg:w-auto">
+                <div className="input-field-admin flex flex-col gap-2 flex-1 min-w-[100px]">
+                  <label className="flex items-center gap-1.5 text-xs text-white/50 uppercase tracking-wider">
                     <Play size={12} /> Plays
                   </label>
                   <input
@@ -91,11 +93,11 @@ export default function MusicTable({
                       handleUpdate &&
                       handleUpdate(track.id, "plays", e.target.value)
                     }
-                    className="bg-black/30 border border-white/10 text-white px-4 py-2.5 rounded-lg w-24 focus:outline-none focus:border-primary"
+                    className="bg-black/30 border border-border-subtle text-white px-4 py-2.5 rounded-sm w-full focus:outline-none focus:border-primary"
                   />
                 </div>
-                <div className="input-field-admin flex flex-col gap-2">
-                  <label className="flex items-center gap-1.5 text-[0.75rem] text-white/50 uppercase">
+                <div className="input-field-admin flex flex-col gap-2 flex-1 min-w-[100px]">
+                  <label className="flex items-center gap-1.5 text-xs text-white/50 uppercase tracking-wider">
                     <Heart size={12} /> Likes
                   </label>
                   <input
@@ -105,15 +107,24 @@ export default function MusicTable({
                       handleUpdate &&
                       handleUpdate(track.id, "likes", e.target.value)
                     }
-                    className="bg-black/30 border border-white/10 text-white px-4 py-2.5 rounded-lg w-24 focus:outline-none focus:border-primary"
+                    className="bg-black/30 border border-border-subtle text-white px-4 py-2.5 rounded-sm w-full focus:outline-none focus:border-primary"
                   />
                 </div>
-                <button
-                  className="save-track-btn w-[42px] h-[42px] rounded-lg bg-surface border border-border-subtle text-white/50 flex items-center justify-center cursor-pointer transition-all hover:bg-primary hover:text-white hover:border-primary hover:scale-105"
-                  title="Save Changes"
-                >
-                  <Save size={18} />
-                </button>
+                
+                <div className="flex gap-2">
+                  <button
+                    className="save-track-btn w-[42px] h-[42px] rounded-sm bg-white border border-transparent text-black flex items-center justify-center cursor-pointer transition-all hover:bg-zinc-200"
+                    title="Save Changes"
+                  >
+                    <Save size={18} />
+                  </button>
+                  <button
+                    className="w-[42px] h-[42px] rounded-sm bg-surface border border-border-subtle text-primary flex items-center justify-center cursor-pointer transition-all hover:bg-primary/10 hover:border-primary/30"
+                    title="Delete Track"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -124,13 +135,14 @@ export default function MusicTable({
             </div>
           )}
         </div>
+        
         {/* pagination */}
         {totalPages && totalPages > 1 && (
-          <div className="admin-pagination mt-8 flex justify-center items-center gap-5">
+          <div className="admin-pagination mt-8 flex justify-center items-center gap-5 pt-6 border-t border-border-subtle">
             <button
               disabled={currentPage === 1 || isLoading}
               onClick={() => setCurrentPage((prev) => prev - 1)}
-              className="page-btn bg-surface border border-border-subtle text-white px-4 py-2 rounded-lg text-[0.85rem] cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:not-disabled:bg-surface-hover hover:not-disabled:border-primary"
+              className="page-btn bg-black/30 border border-border-subtle text-white px-4 py-2 rounded-sm text-sm cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:not-disabled:bg-surface-hover"
             >
               <ChevronLeft size={16} /> Previous
             </button>
@@ -139,7 +151,7 @@ export default function MusicTable({
                 <button
                   key={i + 1}
                   onClick={() => setCurrentPage(i + 1)}
-                  className={`page-number w-9 h-9 flex items-center justify-center rounded-lg bg-surface border border-border-subtle text-white/50 text-[0.9rem] cursor-pointer transition-all disabled:opacity-30 ${currentPage === i + 1 ? "active !bg-primary !border-primary !text-white shadow-[0_4px_15px_rgba(255,45,85,0.3)]" : ""}`}
+                  className={`page-number w-9 h-9 flex items-center justify-center rounded-sm bg-black/30 border border-border-subtle text-white/50 text-sm cursor-pointer transition-all disabled:opacity-30 ${currentPage === i + 1 ? "!bg-white !border-white !text-black" : "hover:bg-surface-hover"}`}
                   disabled={isLoading}
                 >
                   {i + 1}
@@ -149,7 +161,7 @@ export default function MusicTable({
             <button
               disabled={currentPage === totalPages || isLoading}
               onClick={() => setCurrentPage((prev) => prev + 1)}
-              className="page-btn bg-surface border border-border-subtle text-white px-4 py-2 rounded-lg text-[0.85rem] cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:not-disabled:bg-surface-hover hover:not-disabled:border-primary"
+              className="page-btn bg-black/30 border border-border-subtle text-white px-4 py-2 rounded-sm text-sm cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:not-disabled:bg-surface-hover"
             >
               Next <ChevronRight size={16} />
             </button>
