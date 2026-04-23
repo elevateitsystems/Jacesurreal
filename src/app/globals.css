@@ -4,12 +4,12 @@
   --color-primary: #ff2d55;
   --color-surface: #1a1a1a;
   --color-border-subtle: rgba(255, 255, 255, 0.1);
-  --font-sans: var(--font-outfit), sans-serif;
+  --font-sans: var(--font-roboto), sans-serif;
   --font-bebas: var(--font-bebas), sans-serif;
 }
 
 @source "../**/*.{ts,tsx}";
 
 body {
-  @apply bg-black text-white;
+  @apply bg-black text-white font-sans;
 }

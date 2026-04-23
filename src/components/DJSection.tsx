@@ -14,9 +14,9 @@ export default function DJSection() {
           unoptimized
         />
       </div>
-      
+
       <div className="flex-1 text-center md:text-left space-y-4">
-        <h1 className="text-6xl md:text-8xl font-bebas tracking-widest text-white">
+        <h1 className="text-2xl md:text-4xl font-bebas tracking-widest text-white">
           JACE SURREAL
         </h1>
         <p className="text-xl text-white/50 font-light tracking-wide max-w-lg">
@@ -37,4 +37,3 @@ export default function DJSection() {
     </div>
   );
 }
-
