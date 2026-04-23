@@ -1,12 +1,12 @@
 import BackgroundOrbs from "@/components/Visuals/BackgroundOrbs";
 import CustomCursor from "@/components/Visuals/CustomCursor";
 import type { Metadata } from "next";
-import { Bebas_Neue, Outfit } from "next/font/google";
+import { Bebas_Neue, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 
-const outfit = Outfit({
+const robotoCondensed = Roboto_Condensed({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-roboto",
 });
 
 const bebasNeue = Bebas_Neue({
@@ -17,19 +17,19 @@ const bebasNeue = Bebas_Neue({
 
 export const metadata: Metadata = {
   metadataBase: new URL("http://localhost:3000"),
-  title: "DJ SURREAL · official",
+  title: "JACE SURREAL · official",
   description:
-    "Official website of DJ SURREAL. Electronic, House, and Future Bass tracks and sets.",
+    "Official portal of JACE SURREAL. Unreleased sonic artifacts and exclusive archive access.",
   keywords: [
-    "DJ Surreal",
+    "Jace Surreal",
     "Electronic Music",
-    "House Music",
-    "DJ Website",
+    "The Vault",
+    "Sonic Artifacts",
     "Future Bass",
   ],
   openGraph: {
-    title: "DJ SURREAL · official",
-    description: "Official website of DJ SURREAL.",
+    title: "JACE SURREAL · official",
+    description: "The digital portal into the unreleased soundscape.",
     images: ["/hero.png"],
   },
 };
@@ -44,7 +44,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${outfit.variable} ${bebasNeue.variable} antialiased`}>
+      <body className={`${robotoCondensed.variable} ${bebasNeue.variable} antialiased bg-black font-sans`}>
         <CustomCursor />
         <BackgroundOrbs />
         <div className="noise-overlay" />
