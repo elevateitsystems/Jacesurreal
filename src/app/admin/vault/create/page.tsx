@@ -2,19 +2,46 @@
 
 import React, { useState } from 'react';
 import AdminSidebar from '../../components/AdminSidebar';
-import { Music, Upload, Save, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { Music, Upload, Save, ArrowLeft, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function CreateVault() {
   const router = useRouter();
-  const [isUploading, setIsUploading] = useState(false);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [coverArt, setCoverArt] = useState("");
+  const [title, setTitle] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [error, setError] = useState("");
 
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCoverPreview(URL.createObjectURL(file));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/music", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          audioUrl,
+          coverArt: coverArt || undefined,
+          date,
+        }),
+      });
+
+      if (response.ok) {
+        router.push("/admin/vault");
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to create track");
+      }
+    } catch (err) {
+      setError("An error occurred while saving.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -34,27 +61,34 @@ export default function CreateVault() {
         </header>
 
         <div className="max-w-4xl bg-surface/50 border border-border-subtle p-10 rounded-sm">
-          <form className="flex flex-col gap-10" onSubmit={(e) => { e.preventDefault(); router.push('/admin/vault'); }}>
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-xs py-3 px-4 rounded-sm tracking-wider uppercase mb-6">
+              {error}
+            </div>
+          )}
+
+          <form className="flex flex-col gap-10" onSubmit={handleSubmit}>
             
             <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-10">
-              {/* Cover Upload */}
+              {/* Cover Artwork Link */}
               <div className="flex flex-col gap-4">
-                <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold">Cover Artwork</label>
-                <div className="relative group">
-                  <div className="aspect-square rounded-sm bg-black/50 border-2 border-dashed border-border-subtle flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-primary cursor-pointer">
-                    {coverPreview ? (
-                      <img src={coverPreview} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <>
-                        <ImageIcon size={32} className="text-white/20 mb-2" />
-                        <span className="text-[0.6rem] text-white/20 uppercase tracking-tighter">400x400 recommended</span>
-                      </>
-                    )}
-                  </div>
-                  <input type="file" className="hidden" id="cover-upload" accept="image/*" onChange={handleCoverChange} />
-                  <button type="button" onClick={() => document.getElementById('cover-upload')?.click()} className="absolute bottom-4 right-4 bg-white text-black p-2 rounded-sm shadow-xl opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Upload size={16} />
-                  </button>
+                <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Cover Art URL</label>
+                <input 
+                  type="text" 
+                  placeholder="https://example.com/image.jpg" 
+                  value={coverArt}
+                  onChange={(e) => setCoverArt(e.target.value)}
+                  className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white focus:outline-none focus:border-primary transition-all"
+                />
+                <div className="aspect-square rounded-sm bg-black/50 border-2 border-dashed border-border-subtle flex flex-col items-center justify-center overflow-hidden">
+                  {coverArt ? (
+                    <img src={coverArt} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <>
+                      <ImageIcon size={32} className="text-white/20 mb-2" />
+                      <span className="text-[0.6rem] text-white/20 uppercase tracking-tighter text-center px-4">Preview appears when URL is valid</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -62,41 +96,51 @@ export default function CreateVault() {
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Track Title</label>
-                  <input type="text" placeholder="e.g. Midnight Waves" className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white text-lg focus:outline-none focus:border-primary transition-all" />
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="e.g. Midnight Waves" 
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white text-lg focus:outline-none focus:border-primary transition-all" 
+                  />
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Audio Source</label>
-                  <div className="relative border border-border-subtle bg-black/40 rounded-sm p-6 flex flex-col items-center justify-center border-dashed group hover:border-primary transition-all cursor-pointer">
-                    <Music size={24} className="text-white/20 group-hover:text-primary mb-2" />
-                    <span className="text-white/30 text-xs font-bold uppercase tracking-widest">Upload Master File (WAV/MP3)</span>
-                  </div>
+                  <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Audio Source URL</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="https://example.com/audio.mp3" 
+                    value={audioUrl}
+                    onChange={(e) => setAudioUrl(e.target.value)}
+                    className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white focus:outline-none focus:border-primary transition-all" 
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Release / Schedule Date</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white focus:outline-none focus:border-primary transition-all" 
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex flex-col gap-2">
-                <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Genre / Tag</label>
-                <select className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white/70 focus:outline-none focus:border-primary transition-all appearance-none">
-                  <option>Ambient</option>
-                  <option>Techno</option>
-                  <option>House</option>
-                  <option>Experimental</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Visibility</label>
-                <select className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white/70 focus:outline-none focus:border-primary transition-all appearance-none">
-                  <option>Exclusive Vault (Members Only)</option>
-                  <option>Public Release</option>
-                  <option>Private Link Only</option>
-                </select>
-              </div>
-            </div>
-
-            <button className="w-full bg-primary text-white font-bebas tracking-[0.2em] text-xl py-6 rounded-sm hover:bg-opacity-90 transition-all flex items-center justify-center gap-4 shadow-[0_10px_30px_rgba(255,45,85,0.2)]">
-              <Save size={24} /> Finalize Artifact
+            <button 
+              disabled={isSaving}
+              className="w-full bg-primary text-white font-bebas tracking-[0.2em] text-xl py-6 rounded-sm hover:bg-opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-4 shadow-[0_10px_30px_rgba(255,45,85,0.2)]"
+            >
+              {isSaving ? (
+                <Loader2 className="animate-spin" size={24} />
+              ) : (
+                <Save size={24} />
+              )}
+              Finalize Artifact
             </button>
           </form>
         </div>

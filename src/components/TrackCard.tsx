@@ -50,7 +50,7 @@ export default function TrackCard({
           
           <div className="flex items-center justify-between text-white/30 text-[0.6rem] uppercase tracking-widest font-mono mt-1 mb-1">
             <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(track.duration)}</span>
+            <span>{formatTime(track.duration || 0)}</span>
           </div>
 
           <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
