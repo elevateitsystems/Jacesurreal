@@ -25,7 +25,7 @@ export default function MusicPlayer({
 }: MusicPlayerProps) {
   if (!track) return null;
 
-  const progress = (currentTime / track.duration) * 100;
+  const progress = (currentTime / (track.duration || 1)) * 100;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -87,7 +87,7 @@ export default function MusicPlayer({
                 <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] scale-0 group-hover:scale-100 transition-transform" />
               </div>
             </div>
-            <span className="text-[0.65rem] font-mono text-white/30 w-10">{formatTime(track.duration)}</span>
+            <span className="text-[0.65rem] font-mono text-white/30 w-10">{formatTime(track.duration || 0)}</span>
           </div>
         </div>
 

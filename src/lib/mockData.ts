@@ -3,10 +3,11 @@ export type Track = {
   title: string;
   audioUrl: string;
   coverArt: string;
-  duration: number; // in seconds
+  duration?: number; // in seconds
   plays: number;
   likes: number;
   dislikes: number;
+  date: string; // The release/schedule date
   createdAt: string;
   isLiked?: boolean;
   isDisliked?: boolean;
@@ -46,6 +47,7 @@ export const mockTracks: Track[] = [
     plays: 1205,
     likes: 342,
     dislikes: 12,
+    date: '2023-10-01T12:00:00Z',
     createdAt: '2023-10-01T12:00:00Z',
   },
   {
@@ -57,6 +59,7 @@ export const mockTracks: Track[] = [
     plays: 2890,
     likes: 210,
     dislikes: 5,
+    date: '2023-10-15T14:30:00Z',
     createdAt: '2023-10-15T14:30:00Z',
   },
   {
@@ -68,6 +71,7 @@ export const mockTracks: Track[] = [
     plays: 540,
     likes: 480,
     dislikes: 2,
+    date: '2023-11-02T09:15:00Z',
     createdAt: '2023-11-02T09:15:00Z',
   },
 ];
