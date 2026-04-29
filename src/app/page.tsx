@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Navbar from "@/components/Navbar";
-import MusicSection from "@/components/MusicSection";
 import HeroCard from "@/components/HeroCard";
+import MusicSection from "@/components/MusicSection";
 import MusicPlayer from "@/components/MusicPlayer";
 import ContactUs from "@/components/ContactUs";
 import useToast from "@/lib/useToast";
-import { Disc, Loader2 } from "lucide-react";
+import { Disc, Search } from "lucide-react";
+import { HeroCardSkeleton, MusicCardSkeleton } from "@/components/Skeleton";
 import { Track } from "@/lib/mockData";
 
 export default function Home() {
@@ -36,11 +37,9 @@ export default function Home() {
     };
     
     const handleLoadedMetadata = () => {
-      // Use the functional update to avoid dependency on currentTrack
       setCurrentTrack(prev => {
         if (prev && !prev.duration && audio.duration) {
           const newDur = audio.duration;
-          // Also update the tracks list
           setTracks(tPrev => tPrev.map(t => t.id === prev.id ? { ...t, duration: newDur } : t));
           return { ...prev, duration: newDur };
         }
@@ -53,12 +52,12 @@ export default function Home() {
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
 
     return () => {
-      audio.pause(); // Stop music when leaving the page
+      audio.pause();
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
     };
-  }, []); // Empty dependency array is safe now
+  }, []);
 
   const fetchTracks = async () => {
     setIsLoading(true);
@@ -67,7 +66,6 @@ export default function Home() {
       const data = await response.json();
       
       if (Array.isArray(data)) {
-        // Load liked/disliked tracks from localStorage immediately
         let likedIds: string[] = [];
         let dislikedIds: string[] = [];
         try {
@@ -92,19 +90,21 @@ export default function Home() {
         
         setTracks(mappedTracks);
 
-        const now = new Date().getTime();
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
         
-        // 1. Find the upcoming tracks
-        const upcomingTracks = mappedTracks.filter(t => new Date(t.date).getTime() > now);
+        // Find tracks that are from today onwards
+        const eligibleTracks = mappedTracks.filter(t => new Date(t.date).getTime() >= todayStart.getTime());
         
-        if (upcomingTracks.length > 0) {
-          // 2. Identify the single nearest upcoming date
-          const sortedUpcoming = [...upcomingTracks].sort((a, b) => 
+        if (eligibleTracks.length > 0) {
+          // Sort to find the earliest one among them
+          const sortedEligible = [...eligibleTracks].sort((a, b) => 
             new Date(a.date).getTime() - new Date(b.date).getTime()
           );
-          const nearestDateStr = new Date(sortedUpcoming[0].date).toDateString();
           
-          // 3. Filter tracks to only those matching that specific nearest date
+          const nearestDateStr = new Date(sortedEligible[0].date).toDateString();
+          
+          // Filter to only those on that exact nearest date
           const filteredByNearestDate = mappedTracks.filter(t => 
             new Date(t.date).toDateString() === nearestDateStr
           );
@@ -114,7 +114,6 @@ export default function Home() {
             setCurrentTrack(filteredByNearestDate[0]);
           }
         } else {
-          // If no upcoming tracks exist, show nothing as requested
           setTracks([]);
           setCurrentTrack(null);
         }
@@ -323,8 +322,19 @@ export default function Home() {
 
       <div className="container mx-auto px-4 md:px-12 pt-32">
         {isLoading ? (
-          <div className="h-[70vh] flex items-center justify-center">
-            <Loader2 className="animate-spin text-primary" size={64} />
+          <div className="flex flex-col lg:flex-row w-full gap-12 lg:gap-20">
+            <section className="w-full lg:w-[45%]">
+              <div className="h-12 w-48 bg-white/5 animate-pulse mb-8 rounded-sm" />
+              <HeroCardSkeleton />
+            </section>
+            <section className="w-full lg:w-[55%]">
+              <div className="h-20 bg-white/5 animate-pulse mb-10 rounded-sm" />
+              <div className="space-y-6">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <MusicCardSkeleton key={i} />
+                ))}
+              </div>
+            </section>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row w-full gap-12 lg:gap-20">
