@@ -14,6 +14,7 @@ export default function HeroCard({
   track,
   isPlaying,
   onTogglePlay,
+  onLike,
 }: HeroCardProps) {
   if (!track) return null;
 
