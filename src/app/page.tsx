@@ -12,6 +12,7 @@ import { HeroCardSkeleton, MusicCardSkeleton } from "@/components/Skeleton";
 import { Track } from "@/lib/mockData";
 
 export default function Home() {
+  const [fullLibrary, setFullLibrary] = useState<Track[]>([]);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -88,7 +89,7 @@ export default function Home() {
           date: t.date || new Date().toISOString()
         }));
         
-        setTracks(mappedTracks);
+        setFullLibrary(mappedTracks);
 
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
@@ -125,6 +126,18 @@ export default function Home() {
     }
   };
 
+  // Sync currentTrack and tracks list with fullLibrary changes
+  useEffect(() => {
+    if (currentTrack) {
+      const updated = fullLibrary.find(t => t.id === currentTrack.id);
+      if (updated && (updated.likes !== currentTrack.likes || updated.isLiked !== currentTrack.isLiked || updated.plays !== currentTrack.plays || updated.isDisliked !== currentTrack.isDisliked)) {
+        setCurrentTrack(updated);
+      }
+    }
+    // Update only the metadata in the current filtered list
+    setTracks(prev => prev.map(t => fullLibrary.find(ft => ft.id === t.id) || t));
+  }, [fullLibrary]);
+
   const filteredTracks = useMemo(() => {
     return tracks.filter((track) =>
       track.title.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -137,7 +150,6 @@ export default function Home() {
       if (!audio) return;
 
       if (currentTrack?.id === track.id) {
-        // Fix for first play issue: ensure src is set
         if (!audio.src || audio.src === "" || !audio.src.includes(track.audioUrl)) {
           audio.src = track.audioUrl;
           audio.load();
@@ -149,6 +161,17 @@ export default function Home() {
         } else {
           audio.play().catch(console.warn);
           setIsPlaying(true);
+          
+          // Increment play count every time user plays/resumes
+          setFullLibrary(prev => prev.map(t => 
+            t.id === track.id ? { ...t, plays: t.plays + 1 } : t
+          ));
+
+          fetch(`/api/music/${track.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ increments: { plays: 1 } }),
+          }).catch(err => console.error("Play sync failed:", err));
         }
       } else {
         audio.src = track.audioUrl;
@@ -158,22 +181,16 @@ export default function Home() {
         setIsPlaying(true);
         setCurrentTime(0);
         
-        setTracks((prev) =>
-          prev.map((t) =>
-            t.id === track.id ? { ...t, plays: t.plays + 1 } : t,
-          ),
-        );
+        // Count play
+        setFullLibrary(prev => prev.map(t => 
+          t.id === track.id ? { ...t, plays: t.plays + 1 } : t
+        ));
 
-        // Backend sync for play count
-        try {
-          fetch(`/api/music/${track.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'play' }),
-          });
-        } catch (err) {
-          console.error("Failed to sync play:", err);
-        }
+        fetch(`/api/music/${track.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'play' }),
+        }).catch(err => console.error("Play sync failed:", err));
       }
     },
     [currentTrack, isPlaying],
@@ -182,113 +199,116 @@ export default function Home() {
   const toggleLike = useCallback(
     async (id: string) => {
       let action = 'like';
-      setTracks((prev) =>
-        prev.map((t) => {
-          if (t.id === id) {
-            const isLiked = !t.isLiked;
-            action = isLiked ? 'like' : 'unlike';
-            const updatedTrack: Track = {
-              ...t,
-              isLiked,
-              isDisliked: false,
-              likes: isLiked ? t.likes + 1 : Math.max(0, t.likes - 1),
-            };
+      setFullLibrary(prev => prev.map(t => {
+        if (t.id === id) {
+          const isLiked = !t.isLiked;
+          action = isLiked ? 'like' : 'unlike';
+          const wasDisliked = t.isDisliked;
+          
+          const updated = {
+            ...t,
+            isLiked,
+            isDisliked: false,
+            likes: isLiked ? t.likes + 1 : Math.max(0, t.likes - 1),
+            dislikes: wasDisliked ? Math.max(0, t.dislikes - 1) : t.dislikes
+          };
 
-            // Sync localStorage
-            try {
-              const savedLikes = JSON.parse(localStorage.getItem('jace_liked_tracks') || '[]');
-              if (isLiked) {
-                if (!savedLikes.includes(id)) savedLikes.push(id);
-              } else {
-                const index = savedLikes.indexOf(id);
-                if (index > -1) savedLikes.splice(index, 1);
-              }
-              localStorage.setItem('jace_liked_tracks', JSON.stringify(savedLikes));
-            } catch (e) {
-              console.error("LocalStorage error:", e);
-            }
-
-            if (currentTrack?.id === id) {
-              setCurrentTrack(updatedTrack);
-            }
-            return updatedTrack;
+          // Calculate backend increments
+          const increments: any = {};
+          if (isLiked) {
+            increments.likes = 1;
+            if (wasDisliked) increments.dislikes = -1;
+          } else {
+            increments.likes = -1;
           }
-          return t;
-        }),
-      );
 
-      // Backend sync
-      try {
-        await fetch(`/api/music/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action }),
-        });
-      } catch (err) {
-        console.error("Failed to sync like:", err);
-      }
+          // Sync Storage
+          try {
+            const likes = JSON.parse(localStorage.getItem('jace_liked_tracks') || '[]');
+            const dislikes = JSON.parse(localStorage.getItem('jace_disliked_tracks') || '[]');
+            
+            if (isLiked) {
+              if (!likes.includes(id)) likes.push(id);
+              const dIndex = dislikes.indexOf(id);
+              if (dIndex > -1) dislikes.splice(dIndex, 1);
+            } else {
+              const lIndex = likes.indexOf(id);
+              if (lIndex > -1) likes.splice(lIndex, 1);
+            }
+            
+            localStorage.setItem('jace_liked_tracks', JSON.stringify(likes));
+            localStorage.setItem('jace_disliked_tracks', JSON.stringify(dislikes));
+          } catch (e) {}
+
+          // Backend sync with increments
+          fetch(`/api/music/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ increments }),
+          }).catch(() => {});
+
+          return updated;
+        }
+        return t;
+      }));
     },
-    [currentTrack],
+    []
   );
 
   const toggleDislike = useCallback(
     async (id: string) => {
       let action = 'dislike';
-      setTracks((prev) =>
-        prev.map((t) => {
-          if (t.id === id) {
-            const isDisliked = !t.isDisliked;
-            action = isDisliked ? 'dislike' : 'undislike';
-            const updatedTrack: Track = {
-              ...t,
-              isDisliked,
-              isLiked: false,
-              dislikes: isDisliked ? t.dislikes + 1 : Math.max(0, t.dislikes - 1),
-              likes: t.isLiked ? Math.max(0, t.likes - 1) : t.likes,
-            };
+      setFullLibrary(prev => prev.map(t => {
+        if (t.id === id) {
+          const isDisliked = !t.isDisliked;
+          action = isDisliked ? 'dislike' : 'undislike';
+          const wasLiked = t.isLiked;
+          
+          const updated = {
+            ...t,
+            isDisliked,
+            isLiked: false,
+            dislikes: isDisliked ? t.dislikes + 1 : Math.max(0, t.dislikes - 1),
+            likes: wasLiked ? Math.max(0, t.likes - 1) : t.likes
+          };
 
-            // Sync localStorage
-            try {
-              const savedDislikes = JSON.parse(localStorage.getItem('jace_disliked_tracks') || '[]');
-              if (isDisliked) {
-                if (!savedDislikes.includes(id)) savedDislikes.push(id);
-                // Also remove from likes if it was liked
-                const savedLikes = JSON.parse(localStorage.getItem('jace_liked_tracks') || '[]');
-                const likeIndex = savedLikes.indexOf(id);
-                if (likeIndex > -1) {
-                  savedLikes.splice(likeIndex, 1);
-                  localStorage.setItem('jace_liked_tracks', JSON.stringify(savedLikes));
-                }
-              } else {
-                const index = savedDislikes.indexOf(id);
-                if (index > -1) savedDislikes.splice(index, 1);
-              }
-              localStorage.setItem('jace_disliked_tracks', JSON.stringify(savedDislikes));
-            } catch (e) {
-              console.error("LocalStorage error:", e);
-            }
-
-            if (currentTrack?.id === id) {
-              setCurrentTrack(updatedTrack);
-            }
-            return updatedTrack;
+          // Calculate backend increments
+          const increments: any = {};
+          if (isDisliked) {
+            increments.dislikes = 1;
+            if (wasLiked) increments.likes = -1;
+          } else {
+            increments.dislikes = -1;
           }
-          return t;
-        }),
-      );
 
-      // Backend sync
-      try {
-        await fetch(`/api/music/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action }),
-        });
-      } catch (err) {
-        console.error("Failed to sync dislike:", err);
-      }
+          try {
+            const likes = JSON.parse(localStorage.getItem('jace_liked_tracks') || '[]');
+            const dislikes = JSON.parse(localStorage.getItem('jace_disliked_tracks') || '[]');
+            if (isDisliked) {
+              if (!dislikes.includes(id)) dislikes.push(id);
+              const lIndex = likes.indexOf(id);
+              if (lIndex > -1) likes.splice(lIndex, 1);
+            } else {
+              const dIndex = dislikes.indexOf(id);
+              if (dIndex > -1) dislikes.splice(dIndex, 1);
+            }
+            localStorage.setItem('jace_liked_tracks', JSON.stringify(likes));
+            localStorage.setItem('jace_disliked_tracks', JSON.stringify(dislikes));
+          } catch (e) {}
+
+          // Backend sync with increments
+          fetch(`/api/music/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ increments }),
+          }).catch(() => {});
+
+          return updated;
+        }
+        return t;
+      }));
     },
-    [currentTrack],
+    []
   );
 
   const skipTrack = useCallback(

@@ -64,13 +64,15 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { action } = body; // 'like', 'unlike', 'play'
+    const { action, increments } = body; 
 
     const client = await clientPromise;
     const db = client.db();
 
     let update: any = {};
-    if (action === 'like') {
+    if (increments) {
+      update = { $inc: increments };
+    } else if (action === 'like') {
       update = { $inc: { likes: 1 } };
     } else if (action === 'unlike') {
       update = { $inc: { likes: -1 } };
@@ -93,7 +95,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Track not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: `Track ${action} updated successfully` });
+    return NextResponse.json({ message: "Stats updated successfully" });
   } catch (error: any) {
     console.error("Music PATCH error:", error);
     return NextResponse.json({ error: "Failed to update track stats" }, { status: 500 });
