@@ -1,171 +1,163 @@
-import { Upload, Music } from "lucide-react";
+import { Upload, Music, Image as ImageIcon, X } from "lucide-react";
 import React, { JSX } from "react";
 import * as mm from "music-metadata-browser";
 import Image from "next/image";
 
-export default function AudioUploadField(): JSX.Element {
-  const [file, setFile] = React.useState<File | null>(null);
-  const [progress, setProgress] = React.useState<number>(0);
-  const [isUploading, setIsUploading] = React.useState<boolean>(false);
-  const [thumbnail, setThumbnail] = React.useState<string | null>(null);
-  const [isDragActive, setIsDragActive] = React.useState<boolean>(false);
+interface AudioUploadFieldProps {
+  onAudioChange: (data: string | null, duration?: number) => void;
+  onThumbnailChange: (data: string | null) => void;
+  audioUrl: string | null;
+  thumbnailUrl: string | null;
+}
 
-  // store blob url for cleanup
-  const blobUrlRef = React.useRef<string | null>(null);
+export default function AudioUploadField({
+  onAudioChange,
+  onThumbnailChange,
+  audioUrl,
+  thumbnailUrl
+}: AudioUploadFieldProps): JSX.Element {
+  const [thumbMode, setThumbMode] = React.useState<"link" | "local">("link");
+  const [audioMode, setAudioMode] = React.useState<"link" | "local">("link");
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    return () => {
-      if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
-      }
-    };
-  }, []);
+    setPreviewUrl(thumbnailUrl);
+  }, [thumbnailUrl]);
 
-  const extractThumbnail = async (file: File): Promise<string | null> => {
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const extractMetadata = async (file: File) => {
     try {
       const metadata = await mm.parseBlob(file);
-      const picture = metadata.common.picture?.[0];
-
-      if (!picture?.data || !picture?.format) return null;
-
-      const blob = new Blob([new Uint8Array(picture.data)], {
-        type: picture.format,
-      });
-
-      const url = URL.createObjectURL(blob);
-      blobUrlRef.current = url;
-
-      return url;
+      return { duration: metadata.format.duration || 0 };
     } catch {
-      return null;
+      return { duration: 0 };
     }
   };
 
-  const handleFileChange = async (
-    e: any,
-  ): Promise<void> => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    // reset state in a single render batch
-    setFile(selectedFile);
-    setProgress(0);
-    setIsUploading(true);
-    setThumbnail(null);
-
-    // try embedded thumbnail
-    const metaThumb = await extractThumbnail(selectedFile);
-
-    // fallback preview only if needed
-    let finalThumb = metaThumb;
-
-    if (!finalThumb) {
-      const fallbackUrl = URL.createObjectURL(selectedFile);
-      blobUrlRef.current = fallbackUrl;
-      finalThumb = fallbackUrl;
-    }
-
-    setThumbnail(finalThumb);
-
-    // fake upload progress (UI simulation only)
-    let current = 0;
-
-    const interval = window.setInterval(() => {
-      current += Math.floor(Math.random() * 10) + 8;
-
-      if (current >= 100) {
-        current = 100;
-        window.clearInterval(interval);
-        setIsUploading(false);
-      }
-
-      setProgress(current);
-    }, 300);
+  const handleAudioFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const { duration } = await extractMetadata(file);
+    const base64 = await convertFileToBase64(file);
+    onAudioChange(base64, duration);
   };
 
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragActive(true); };
-  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragActive(false); };
-  const handleDrop = (e: React.DragEvent) => { 
-    e.preventDefault(); 
-    setIsDragActive(false); 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileChange({ target: { files: e.dataTransfer.files } }); 
-    }
+  const handleThumbnailFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const base64 = await convertFileToBase64(file);
+    onThumbnailChange(base64);
   };
 
   return (
-    <div className="track-uploader flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <label className="text-white/40 text-[0.8rem] uppercase tracking-wider font-medium ml-1 flex items-center gap-2">
-          <Music size={14} className="text-primary" /> Audio File
+    <div className="flex flex-col md:flex-row gap-8">
+      {/* Cover Art Section */}
+      <div className="w-full md:w-[280px] flex flex-col gap-3">
+        <div className="flex gap-4 mb-1">
+          <button
+            type="button"
+            onClick={() => setThumbMode("link")}
+            className={`text-[0.7rem] uppercase tracking-wider font-bold transition-colors ${thumbMode === "link" ? "text-primary border-b-2 border-primary" : "text-white/20 hover:text-white"}`}
+          >
+            Link
+          </button>
+          <button
+            type="button"
+            onClick={() => setThumbMode("local")}
+            className={`text-[0.7rem] uppercase tracking-wider font-bold transition-colors ${thumbMode === "local" ? "text-primary border-b-2 border-primary" : "text-white/20 hover:text-white"}`}
+          >
+            from local
+          </button>
+        </div>
+        
+        <label className="text-white/40 text-[0.65rem] uppercase tracking-[0.2em] font-bold">
+          COVER ART URL
         </label>
-        <div 
-          className={`relative border-2 border-dashed transition-all duration-300 rounded-sm p-10 flex flex-col items-center justify-center cursor-pointer group ${
-            isDragActive ? 'border-primary bg-primary/5' : 'border-border-subtle bg-black/30 hover:border-white/20'
-          }`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => document.getElementById('audio-upload-input')?.click()}
-        >
-          <input 
-            id="audio-upload-input"
-            type="file" 
-            accept="audio/*" 
-            className="hidden" 
-            onChange={handleFileChange}
+
+        {thumbMode === "link" ? (
+          <input
+            type="text"
+            value={thumbnailUrl || ""}
+            onChange={(e) => onThumbnailChange(e.target.value)}
+            placeholder="https://example.com/image."
+            className="bg-black/30 border border-white/5 text-white px-4 py-3 rounded-sm focus:outline-none focus:border-primary transition-all text-xs font-mono"
           />
-          <div className="w-16 h-16 rounded-sm bg-surface border border-border-subtle flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-            <Upload className="text-white/30 group-hover:text-primary transition-colors" size={28} />
+        ) : (
+          <div 
+            onClick={() => document.getElementById('thumb-file')?.click()}
+            className="bg-black/30 border border-white/5 border-dashed rounded-sm py-3 px-4 text-xs text-white/40 cursor-pointer hover:bg-primary/5 hover:border-primary/30 transition-all flex items-center gap-2"
+          >
+            <Upload size={14} />
+            <span>{thumbnailUrl?.startsWith('data:') ? "Image Ready" : "Choose local image"}</span>
+            <input id="thumb-file" type="file" accept="image/*" className="hidden" onChange={handleThumbnailFileChange} />
           </div>
-          <p className="text-white font-medium text-lg mb-1">Upload Audio Track</p>
-          <p className="text-white/40 text-sm">Drag & drop or click to browse</p>
+        )}
+        
+        <div className="aspect-square w-full rounded-sm bg-surface border border-white/5 border-dashed overflow-hidden flex flex-col items-center justify-center group mt-2">
+          {previewUrl ? (
+            <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+          ) : (
+            <div className="flex flex-col items-center gap-2 opacity-10">
+              <ImageIcon size={32} strokeWidth={1} />
+              <span className="text-[0.5rem] uppercase font-bold tracking-[0.15em] text-center px-4">PREVIEW APPEARS WHEN URL IS VALID</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {file && (
-        <div className="file-info bg-surface border border-border-subtle rounded-sm p-5 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="w-12 h-12 rounded-sm bg-black/30 flex items-center justify-center text-primary border border-primary/20 shrink-0 overflow-hidden">
-            {thumbnail ? (
-              <Image
-                src={thumbnail}
-                alt="Audio thumbnail"
-                className="h-full w-full object-cover"
-                width={50}
-                height={50}
-              />
-            ) : (
-              <Music size={20} />
-            )}
+      {/* Track Details & Audio Source Section */}
+      <div className="flex-1 flex flex-col gap-8 pt-6 md:pt-0">
+        {/* Title input will be in parent, so we just focus on Audio here */}
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-4 mb-1">
+            <button
+              type="button"
+              onClick={() => setAudioMode("link")}
+              className={`text-[0.7rem] uppercase tracking-wider font-bold transition-colors ${audioMode === "link" ? "text-primary border-b-2 border-primary" : "text-white/20 hover:text-white"}`}
+            >
+              Link
+            </button>
+            <button
+              type="button"
+              onClick={() => setAudioMode("local")}
+              className={`text-[0.7rem] uppercase tracking-wider font-bold transition-colors ${audioMode === "local" ? "text-primary border-b-2 border-primary" : "text-white/20 hover:text-white"}`}
+            >
+              from local
+            </button>
           </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="mb-2 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="truncate text-[0.9rem] font-medium text-white">
-                  {file.name}
-                </p>
-                <p className="text-[0.75rem] text-white/40 font-mono">
-                  {(file.size / (1024 * 1024)).toFixed(2)} MB
-                </p>
-              </div>
-              <span className="text-[0.8rem] font-semibold text-primary font-mono">
-                {progress}%
-              </span>
-            </div>
+          <label className="text-white/40 text-[0.65rem] uppercase tracking-[0.2em] font-bold">
+            AUDIO SOURCE URL
+          </label>
 
-            <div className="h-1.5 w-full bg-black/30 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
+          {audioMode === "link" ? (
+            <input
+              type="text"
+              value={audioUrl || ""}
+              onChange={(e) => onAudioChange(e.target.value)}
+              placeholder="https://example.com/audio.mp3"
+              className="bg-black/30 border border-white/5 text-white px-4 py-4 rounded-sm focus:outline-none focus:border-primary transition-all text-xs font-mono"
+            />
+          ) : (
+            <div 
+              onClick={() => document.getElementById('audio-file')?.click()}
+              className="bg-black/30 border border-white/5 border-dashed rounded-sm py-4 px-4 text-xs text-white/40 cursor-pointer hover:bg-primary/5 hover:border-primary/30 transition-all flex items-center gap-2"
+            >
+              <Music size={16} />
+              <span>{audioUrl?.startsWith('data:') ? "Audio File Ready" : "Choose local audio file"}</span>
+              <input id="audio-file" type="file" accept="audio/*" className="hidden" onChange={handleAudioFileChange} />
             </div>
-            <p className="mt-1.5 text-[0.7rem] text-white/40 uppercase tracking-wider">
-              {isUploading ? "Uploading..." : "Ready to publish"}
-            </p>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

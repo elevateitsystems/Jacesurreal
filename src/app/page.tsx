@@ -34,15 +34,31 @@ export default function Home() {
       setIsPlaying(false);
       setCurrentTime(0);
     };
+    
+    const handleLoadedMetadata = () => {
+      // Use the functional update to avoid dependency on currentTrack
+      setCurrentTrack(prev => {
+        if (prev && !prev.duration && audio.duration) {
+          const newDur = audio.duration;
+          // Also update the tracks list
+          setTracks(tPrev => tPrev.map(t => t.id === prev.id ? { ...t, duration: newDur } : t));
+          return { ...prev, duration: newDur };
+        }
+        return prev;
+      });
+    };
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
 
     return () => {
+      audio.pause(); // Stop music when leaving the page
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
     };
-  }, []);
+  }, []); // Empty dependency array is safe now
 
   const fetchTracks = async () => {
     setIsLoading(true);
@@ -51,10 +67,21 @@ export default function Home() {
       const data = await response.json();
       
       if (Array.isArray(data)) {
-        // Map _id to id and provide defaults for missing required fields
+        // Load liked/disliked tracks from localStorage immediately
+        let likedIds: string[] = [];
+        let dislikedIds: string[] = [];
+        try {
+          likedIds = JSON.parse(localStorage.getItem('jace_liked_tracks') || '[]');
+          dislikedIds = JSON.parse(localStorage.getItem('jace_disliked_tracks') || '[]');
+        } catch (e) {
+          console.error("Error reading localStorage", e);
+        }
+
         const mappedTracks: Track[] = data.map(t => ({
           ...t,
           id: t._id,
+          isLiked: likedIds.includes(t._id),
+          isDisliked: dislikedIds.includes(t._id),
           duration: t.duration || 0,
           createdAt: t.createdAt || new Date().toISOString(),
           plays: t.plays || 0,
@@ -62,17 +89,34 @@ export default function Home() {
           dislikes: t.dislikes || 0,
           date: t.date || new Date().toISOString()
         }));
+        
         setTracks(mappedTracks);
 
         const now = new Date().getTime();
-        const sorted = [...mappedTracks].sort((a, b) => {
-          const distA = Math.abs(new Date(a.date).getTime() - now);
-          const distB = Math.abs(new Date(b.date).getTime() - now);
-          return distA - distB;
-        });
-
-        if (sorted.length > 0) {
-          setCurrentTrack(sorted[0]);
+        
+        // 1. Find the upcoming tracks
+        const upcomingTracks = mappedTracks.filter(t => new Date(t.date).getTime() > now);
+        
+        if (upcomingTracks.length > 0) {
+          // 2. Identify the single nearest upcoming date
+          const sortedUpcoming = [...upcomingTracks].sort((a, b) => 
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
+          const nearestDateStr = new Date(sortedUpcoming[0].date).toDateString();
+          
+          // 3. Filter tracks to only those matching that specific nearest date
+          const filteredByNearestDate = mappedTracks.filter(t => 
+            new Date(t.date).toDateString() === nearestDateStr
+          );
+          
+          setTracks(filteredByNearestDate);
+          if (filteredByNearestDate.length > 0) {
+            setCurrentTrack(filteredByNearestDate[0]);
+          }
+        } else {
+          // If no upcoming tracks exist, show nothing as requested
+          setTracks([]);
+          setCurrentTrack(null);
         }
       }
     } catch (error) {
@@ -94,6 +138,12 @@ export default function Home() {
       if (!audio) return;
 
       if (currentTrack?.id === track.id) {
+        // Fix for first play issue: ensure src is set
+        if (!audio.src || audio.src === "" || !audio.src.includes(track.audioUrl)) {
+          audio.src = track.audioUrl;
+          audio.load();
+        }
+
         if (isPlaying) {
           audio.pause();
           setIsPlaying(false);
@@ -114,23 +164,51 @@ export default function Home() {
             t.id === track.id ? { ...t, plays: t.plays + 1 } : t,
           ),
         );
+
+        // Backend sync for play count
+        try {
+          fetch(`/api/music/${track.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'play' }),
+          });
+        } catch (err) {
+          console.error("Failed to sync play:", err);
+        }
       }
     },
     [currentTrack, isPlaying],
   );
 
   const toggleLike = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      let action = 'like';
       setTracks((prev) =>
         prev.map((t) => {
           if (t.id === id) {
             const isLiked = !t.isLiked;
+            action = isLiked ? 'like' : 'unlike';
             const updatedTrack: Track = {
               ...t,
               isLiked,
               isDisliked: false,
               likes: isLiked ? t.likes + 1 : Math.max(0, t.likes - 1),
             };
+
+            // Sync localStorage
+            try {
+              const savedLikes = JSON.parse(localStorage.getItem('jace_liked_tracks') || '[]');
+              if (isLiked) {
+                if (!savedLikes.includes(id)) savedLikes.push(id);
+              } else {
+                const index = savedLikes.indexOf(id);
+                if (index > -1) savedLikes.splice(index, 1);
+              }
+              localStorage.setItem('jace_liked_tracks', JSON.stringify(savedLikes));
+            } catch (e) {
+              console.error("LocalStorage error:", e);
+            }
+
             if (currentTrack?.id === id) {
               setCurrentTrack(updatedTrack);
             }
@@ -139,27 +217,80 @@ export default function Home() {
           return t;
         }),
       );
+
+      // Backend sync
+      try {
+        await fetch(`/api/music/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action }),
+        });
+      } catch (err) {
+        console.error("Failed to sync like:", err);
+      }
     },
     [currentTrack],
   );
 
-  const toggleDislike = useCallback((id: string) => {
-    setTracks((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const isDisliked = !t.isDisliked;
-          return {
-            ...t,
-            isDisliked,
-            isLiked: false,
-            dislikes: isDisliked ? t.dislikes + 1 : Math.max(0, t.dislikes - 1),
-            likes: t.isLiked ? Math.max(0, t.likes - 1) : t.likes,
-          };
-        }
-        return t;
-      }),
-    );
-  }, []);
+  const toggleDislike = useCallback(
+    async (id: string) => {
+      let action = 'dislike';
+      setTracks((prev) =>
+        prev.map((t) => {
+          if (t.id === id) {
+            const isDisliked = !t.isDisliked;
+            action = isDisliked ? 'dislike' : 'undislike';
+            const updatedTrack: Track = {
+              ...t,
+              isDisliked,
+              isLiked: false,
+              dislikes: isDisliked ? t.dislikes + 1 : Math.max(0, t.dislikes - 1),
+              likes: t.isLiked ? Math.max(0, t.likes - 1) : t.likes,
+            };
+
+            // Sync localStorage
+            try {
+              const savedDislikes = JSON.parse(localStorage.getItem('jace_disliked_tracks') || '[]');
+              if (isDisliked) {
+                if (!savedDislikes.includes(id)) savedDislikes.push(id);
+                // Also remove from likes if it was liked
+                const savedLikes = JSON.parse(localStorage.getItem('jace_liked_tracks') || '[]');
+                const likeIndex = savedLikes.indexOf(id);
+                if (likeIndex > -1) {
+                  savedLikes.splice(likeIndex, 1);
+                  localStorage.setItem('jace_liked_tracks', JSON.stringify(savedLikes));
+                }
+              } else {
+                const index = savedDislikes.indexOf(id);
+                if (index > -1) savedDislikes.splice(index, 1);
+              }
+              localStorage.setItem('jace_disliked_tracks', JSON.stringify(savedDislikes));
+            } catch (e) {
+              console.error("LocalStorage error:", e);
+            }
+
+            if (currentTrack?.id === id) {
+              setCurrentTrack(updatedTrack);
+            }
+            return updatedTrack;
+          }
+          return t;
+        }),
+      );
+
+      // Backend sync
+      try {
+        await fetch(`/api/music/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action }),
+        });
+      } catch (err) {
+        console.error("Failed to sync dislike:", err);
+      }
+    },
+    [currentTrack],
+  );
 
   const skipTrack = useCallback(
     (direction: "next" | "prev") => {
@@ -178,6 +309,13 @@ export default function Home() {
     },
     [currentTrack, tracks, togglePlay],
   );
+
+  const handleSeek = useCallback((time: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  }, []);
 
   return (
     <main className="min-h-screen bg-black overflow-x-hidden font-sans pb-32">
@@ -273,6 +411,7 @@ export default function Home() {
         onSkipNext={() => skipTrack("next")}
         onSkipPrev={() => skipTrack("prev")}
         onLike={() => currentTrack && toggleLike(currentTrack.id)}
+        onSeek={handleSeek}
       />
 
       <ToastContainer />

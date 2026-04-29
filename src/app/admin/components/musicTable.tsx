@@ -68,8 +68,12 @@ export default function MusicTable({
               className="admin-track-item flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-black/30 p-6 rounded-sm border border-border-subtle transition-all hover:border-white/20"
             >
               <div className="track-info-simple flex items-center gap-5">
-                <div className="track-icon w-12 h-12 bg-surface border border-border-subtle rounded-sm flex items-center justify-center text-white/50">
-                  <Music size={20} />
+                <div className="track-icon w-12 h-12 bg-surface border border-border-subtle rounded-sm flex items-center justify-center overflow-hidden">
+                  {track.coverArt && track.coverArt.trim() !== "" && track.coverArt !== "/images/default-cover.jpg" ? (
+                    <img src={track.coverArt} alt={track.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <Music className="text-white/20" size={20} />
+                  )}
                 </div>
                 <div>
                   <h3 className="text-[1.1rem] font-medium text-white truncate max-w-[200px]">

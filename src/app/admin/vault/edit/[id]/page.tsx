@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminSidebar from '../../../components/AdminSidebar';
-import { Music, Save, ArrowLeft, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
+import AudioUploadField from '../../../components/audioUpload';
+import { Save, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 
@@ -12,6 +13,8 @@ interface Track {
   audioUrl: string;
   coverArt: string;
   plays: number;
+  likes?: number;
+  dislikes?: number;
   date: string;
 }
 
@@ -22,9 +25,10 @@ export default function EditVault() {
   
   const [track, setTrack] = useState<Track | null>(null);
   const [title, setTitle] = useState("");
-  const [audioUrl, setAudioUrl] = useState("");
-  const [coverArt, setCoverArt] = useState("");
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [coverArt, setCoverArt] = useState<string | null>(null);
   const [date, setDate] = useState("");
+  const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -54,8 +58,18 @@ export default function EditVault() {
     }
   };
 
+  const handleAudioChange = (url: string | null, dur?: number) => {
+    setAudioUrl(url);
+    if (dur) setDuration(dur);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!audioUrl || !title) {
+      setError("Title and Audio Source are required");
+      return;
+    }
+
     setIsSaving(true);
     setError("");
 
@@ -66,8 +80,9 @@ export default function EditVault() {
         body: JSON.stringify({
           title,
           audioUrl,
-          coverArt,
-          date
+          coverArt: coverArt || undefined,
+          date,
+          duration: duration || track?.plays // Placeholder if duration isn't set
         }),
       });
 
@@ -136,60 +151,34 @@ export default function EditVault() {
           )}
 
           <form className="flex flex-col gap-10" onSubmit={handleSave}>
-            
-            <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-10">
-              {/* Cover Preview */}
-              <div className="flex flex-col gap-4">
-                <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Cover Art URL</label>
+            <AudioUploadField 
+              audioUrl={audioUrl}
+              thumbnailUrl={coverArt}
+              onAudioChange={handleAudioChange}
+              onThumbnailChange={setCoverArt}
+            />
+
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col gap-2 flex-1">
+                <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Track Title</label>
                 <input 
                   type="text" 
-                  value={coverArt}
-                  onChange={(e) => setCoverArt(e.target.value)}
-                  className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white focus:outline-none focus:border-primary transition-all"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white text-lg focus:outline-none focus:border-primary transition-all" 
                 />
-                <div className="aspect-square rounded-sm bg-black/50 border-2 border-dashed border-border-subtle flex flex-col items-center justify-center overflow-hidden">
-                  {coverArt ? (
-                    <img src={coverArt} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon size={32} className="text-white/20" />
-                  )}
-                </div>
               </div>
 
-              {/* Details */}
-              <div className="flex flex-col gap-6">
-                <div className="flex flex-col gap-2">
-                  <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Track Title</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white text-lg focus:outline-none focus:border-primary transition-all" 
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Audio Source URL</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={audioUrl}
-                    onChange={(e) => setAudioUrl(e.target.value)}
-                    className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white focus:outline-none focus:border-primary transition-all" 
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Release Date</label>
-                  <input 
-                    type="date" 
-                    required
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white focus:outline-none focus:border-primary transition-all" 
-                  />
-                </div>
+              <div className="flex flex-col gap-2 flex-1">
+                <label className="text-white/40 text-[0.7rem] uppercase tracking-widest font-bold ml-1">Release Date</label>
+                <input 
+                  type="date" 
+                  required
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full bg-black/40 border border-border-subtle rounded-sm py-4 px-6 text-white focus:outline-none focus:border-primary transition-all" 
+                />
               </div>
             </div>
 
