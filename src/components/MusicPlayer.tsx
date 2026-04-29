@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, Download } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, Download, Music } from 'lucide-react';
 import { Track } from '@/lib/mockData';
 
 interface MusicPlayerProps {
@@ -12,6 +12,7 @@ interface MusicPlayerProps {
   onSkipNext: () => void;
   onSkipPrev: () => void;
   onLike: () => void;
+  onSeek: (time: number) => void;
 }
 
 export default function MusicPlayer({ 
@@ -21,8 +22,11 @@ export default function MusicPlayer({
   onTogglePlay, 
   onSkipNext, 
   onSkipPrev,
-  onLike
+  onLike,
+  onSeek
 }: MusicPlayerProps) {
+  const progressBarRef = React.useRef<HTMLDivElement>(null);
+
   if (!track) return null;
 
   const progress = (currentTime / (track.duration || 1)) * 100;
@@ -33,14 +37,27 @@ export default function MusicPlayer({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || !track) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const seekTime = percentage * (track.duration || 0);
+    onSeek(seekTime);
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] bg-black/95 backdrop-blur-xl border-t border-white/10 h-24 px-6 py-4 animate-in slide-in-from-bottom duration-500">
       <div className="container mx-auto h-full flex items-center justify-between gap-8">
         
         {/* Track Info */}
         <div className="flex items-center gap-4 w-[25%] min-w-0">
-          <div className="w-14 h-14 rounded-sm bg-surface border border-white/10 overflow-hidden flex-shrink-0">
-            <img src={track.coverArt} alt={track.title} className="w-full h-full object-cover" />
+          <div className="w-14 h-14 rounded-sm bg-surface border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
+            {track.coverArt && track.coverArt !== "/images/default-cover.jpg" ? (
+              <img src={track.coverArt} alt={track.title} className="w-full h-full object-cover" />
+            ) : (
+              <Music className="text-white/20" size={24} />
+            )}
           </div>
           <div className="min-w-0">
             <h4 className="text-white font-medium truncate">{track.title}</h4>
@@ -79,7 +96,11 @@ export default function MusicPlayer({
 
           <div className="w-full flex items-center gap-4">
             <span className="text-[0.65rem] font-mono text-white/30 w-10 text-right">{formatTime(currentTime)}</span>
-            <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden group cursor-pointer relative">
+            <div 
+              ref={progressBarRef}
+              onClick={handleProgressClick}
+              className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden group cursor-pointer relative"
+            >
               <div 
                 className="h-full bg-primary relative transition-all duration-100 ease-linear"
                 style={{ width: `${progress}%` }}

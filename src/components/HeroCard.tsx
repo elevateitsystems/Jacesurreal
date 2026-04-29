@@ -14,6 +14,7 @@ export default function HeroCard({
   track,
   isPlaying,
   onTogglePlay,
+  onLike,
 }: HeroCardProps) {
   if (!track) return null;
 
@@ -73,10 +74,13 @@ export default function HeroCard({
               <Users size={18} className="text-primary/70" />
               <span className="font-mono">{track.plays.toLocaleString()}</span>
             </div>
-            <div className="flex items-center gap-2.5">
-              <Heart size={18} fill={track.isLiked ? "currentColor" : "none"} className={track.isLiked ? 'text-primary' : ''} />
+            <button 
+              onClick={(e) => { e.stopPropagation(); onLike(track.id); }}
+              className={`flex items-center gap-2.5 transition-all hover:scale-105 ${track.isLiked ? 'text-primary' : 'text-white/40 hover:text-white'}`}
+            >
+              <Heart size={18} fill={track.isLiked ? "currentColor" : "none"} />
               <span className="font-mono">{track.likes.toLocaleString()}</span>
-            </div>
+            </button>
           </div>
           
           <button 

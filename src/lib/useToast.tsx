@@ -1,50 +1,44 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
+import toast, { Toaster } from "react-hot-toast";
 
 export interface Toast {
     id: string;
     title: string;
     message: string;
-    type: 'success' | 'info';
+    type: 'success' | 'info' | 'error';
 }
 
 export default function useToast() {
-    const [toasts, setToasts] = useState<Toast[]>([]);
+    const showToast = useCallback((title: string, message: string, type: 'success' | 'info' | 'error' = 'info') => {
+        const content = (
+            <div className="flex flex-col gap-1">
+                <div className="font-bold text-sm tracking-wider uppercase">{title}</div>
+                <div className="text-xs opacity-70 font-mono tracking-tight">{message}</div>
+            </div>
+        );
 
-    const showToast = useCallback((title: string, message: string, type: 'success' | 'info' = 'info') => {
-        const id = Math.random().toString(36).substr(2, 9);
-        setToasts(prev => [...prev, { id, title, message, type }]);
-        
-        setTimeout(() => {
-            setToasts(prev => prev.filter(t => t.id !== id));
-        }, 3400); // 3s show + 0.4s fade
+        const style = {
+            background: 'rgba(20, 20, 20, 0.95)',
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '4px',
+            padding: '12px 16px',
+        };
+
+        if (type === 'success') {
+            toast.success(content, { style });
+        } else if (type === 'error') {
+            toast.error(content, { style });
+        } else {
+            toast(content, { style });
+        }
     }, []);
 
     const ToastContainer = () => (
-        <div className="toast-container" id="toastContainer">
-            {toasts.map(t => (
-                <div key={t.id} className="toast show">
-                    <div className={`toast-icon ${t.type}`}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            {t.type === 'success' ? (
-                                <polyline points="20 6 9 17 4 12" />
-                            ) : (
-                                <>
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="12" y1="8" x2="12" y2="12" />
-                                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                                </>
-                            )}
-                        </svg>
-                    </div>
-                    <div className="toast-content">
-                        <div className="toast-title">{t.title}</div>
-                        <div className="toast-message">{t.message}</div>
-                    </div>
-                </div>
-            ))}
-        </div>
+        <Toaster position="bottom-right" />
     );
 
     return { showToast, ToastContainer };

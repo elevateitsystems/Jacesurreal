@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
-import { Search, Plus, Edit2, Trash2, Play, Calendar, BarChart2, Music, Loader2, Filter } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Play, Calendar, BarChart2, Music, Filter } from 'lucide-react';
+import { TableRowSkeleton } from '@/components/Skeleton';
 import Link from 'next/link';
 
 interface Track {
@@ -13,6 +14,23 @@ interface Track {
   date: string;
   createdAt: string;
 }
+
+const VaultImage = ({ src, title }: { src: string; title: string }) => {
+  const [error, setError] = useState(false);
+  
+  if (!src || error) {
+    return <Music className="text-white/10" size={32} />;
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt={title} 
+      onError={() => setError(true)}
+      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+    />
+  );
+};
 
 export default function VaultManagement() {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -105,15 +123,15 @@ export default function VaultManagement() {
         {/* Vault List */}
         <div className="grid grid-cols-1 gap-4">
           {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin text-primary" size={48} />
+            <div className="flex flex-col gap-4">
+              {[1, 2, 3, 4, 5].map(i => <TableRowSkeleton key={i} />)}
             </div>
           ) : (
             filteredTracks.map((track) => (
               <div key={track._id} className="bg-surface/30 border border-border-subtle p-6 rounded-sm flex items-center justify-between group hover:bg-surface/50 transition-all">
                 <div className="flex items-center gap-8">
-                  <div className="w-20 h-20 rounded-sm overflow-hidden border border-border-subtle shadow-lg bg-black">
-                    {track.coverArt && <img src={track.coverArt} alt={track.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />}
+                  <div className="w-20 h-20 rounded-sm overflow-hidden border border-border-subtle shadow-lg bg-black/50 flex items-center justify-center">
+                    <VaultImage src={track.coverArt} title={track.title} />
                   </div>
                   <div>
                     <h3 className="text-2xl font-bebas tracking-wider text-white mb-2 group-hover:text-primary transition-colors">{track.title}</h3>

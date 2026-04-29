@@ -1,7 +1,7 @@
 "use client";
 
 import { Track } from "@/lib/mockData";
-import { Play, Pause, Heart, ThumbsDown } from "lucide-react";
+import { Play, Pause, Heart, ThumbsDown, Music } from "lucide-react";
 
 interface TrackCardProps {
   track: Track;
@@ -37,8 +37,12 @@ export default function TrackCard({
     >
       <div className="relative z-10 flex items-center gap-4">
         {/* Thumbnail & Play Overlay */}
-        <div className="relative w-16 h-16 rounded-sm overflow-hidden flex-shrink-0 border border-white/10 group">
-          <img src={track.coverArt} alt={track.title} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+        <div className="relative w-16 h-16 rounded-sm overflow-hidden flex-shrink-0 border border-white/10 group bg-black/20 flex items-center justify-center">
+          {track.coverArt && track.coverArt !== "/images/default-cover.jpg" ? (
+            <img src={track.coverArt} alt={track.title} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+          ) : (
+            <Music className="text-white/20" size={24} />
+          )}
           <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
             {isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="translate-x-0.5" />}
           </div>
@@ -63,12 +67,25 @@ export default function TrackCard({
 
         {/* Stats */}
         <div className="hidden md:flex items-center gap-4 text-white/20 text-[0.65rem] font-bold uppercase tracking-widest">
-           <div className="flex items-center gap-1">
+           <div className="flex items-center gap-1" title="Plays">
              <Play size={10} className="text-primary" /> {track.plays.toLocaleString()}
            </div>
-           <div className="flex items-center gap-1">
-             <Heart size={10} fill={track.isLiked ? "currentColor" : "none"} className={track.isLiked ? 'text-primary' : ''} /> {track.likes.toLocaleString()}
-           </div>
+           
+           <button 
+             onClick={(e) => { e.stopPropagation(); onLike(track.id); }}
+             className={`flex items-center gap-1 transition-all hover:scale-110 ${track.isLiked ? 'text-primary' : 'hover:text-white'}`}
+             title="Like"
+           >
+             <Heart size={10} fill={track.isLiked ? "currentColor" : "none"} /> {track.likes.toLocaleString()}
+           </button>
+
+           <button 
+             onClick={(e) => { e.stopPropagation(); onDislike(track.id); }}
+             className={`flex items-center gap-1 transition-all hover:scale-110 ${track.isDisliked ? 'text-red-500' : 'hover:text-white'}`}
+             title="Dislike"
+           >
+             <ThumbsDown size={10} fill={track.isDisliked ? "currentColor" : "none"} /> {track.dislikes ? track.dislikes.toLocaleString() : 0}
+           </button>
         </div>
       </div>
     </div>

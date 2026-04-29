@@ -56,3 +56,48 @@ export async function PUT(
     return NextResponse.json({ error: "Failed to update track" }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { action, increments } = body; 
+
+    const client = await clientPromise;
+    const db = client.db();
+
+    let update: any = {};
+    if (increments) {
+      update = { $inc: increments };
+    } else if (action === 'like') {
+      update = { $inc: { likes: 1 } };
+    } else if (action === 'unlike') {
+      update = { $inc: { likes: -1 } };
+    } else if (action === 'dislike') {
+      update = { $inc: { dislikes: 1 } };
+    } else if (action === 'undislike') {
+      update = { $inc: { dislikes: -1 } };
+    } else if (action === 'play') {
+      update = { $inc: { plays: 1 } };
+    } else {
+      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    }
+
+    const result = await db.collection("tracks").updateOne(
+      { _id: new ObjectId(id) },
+      update
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: "Track not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: "Stats updated successfully" });
+  } catch (error: any) {
+    console.error("Music PATCH error:", error);
+    return NextResponse.json({ error: "Failed to update track stats" }, { status: 500 });
+  }
+}
