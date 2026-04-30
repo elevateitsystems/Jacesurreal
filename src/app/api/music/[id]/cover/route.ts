@@ -21,8 +21,10 @@ export async function GET(
     }
 
     if (!track.coverArt.startsWith("data:")) {
-      // If it's a regular link, redirect to it
-      return NextResponse.redirect(track.coverArt);
+      if (track.coverArt.startsWith("http://") || track.coverArt.startsWith("https://")) {
+        return NextResponse.redirect(track.coverArt);
+      }
+      return new NextResponse("Invalid image source", { status: 404 });
     }
 
     // Example base64 format: data:image/jpeg;base64,/9j/4AAQ...

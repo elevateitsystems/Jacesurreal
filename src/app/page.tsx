@@ -149,7 +149,7 @@ export default function Home() {
   const filteredTracks = useMemo(() => {
     return tracks.filter((track) =>
       track.title.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+    ).slice(0, 4);
   }, [tracks, searchQuery]);
 
   const togglePlay = useCallback(

@@ -21,8 +21,12 @@ export async function GET(
     }
 
     if (!track.audioUrl.startsWith("data:")) {
-      // If it's a regular link, redirect to it
-      return NextResponse.redirect(track.audioUrl);
+      // Only redirect if it's an absolute URL
+      if (track.audioUrl.startsWith("http://") || track.audioUrl.startsWith("https://")) {
+        return NextResponse.redirect(track.audioUrl);
+      }
+      // Relative or invalid URL — cannot serve
+      return new NextResponse("Invalid audio source", { status: 404 });
     }
 
     // Example base64 format: data:audio/mpeg;base64,SUQz...
