@@ -2,6 +2,7 @@
 
 import { Track } from "@/lib/mockData";
 import { Play, Pause, Heart, ThumbsDown, Music } from "lucide-react";
+import React from "react";
 
 interface TrackCardProps {
   track: Track;
@@ -22,6 +23,8 @@ export default function TrackCard({
   onLike,
   onDislike,
 }: TrackCardProps) {
+  const [imgError, setImgError] = React.useState(false);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -38,8 +41,13 @@ export default function TrackCard({
       <div className="relative z-10 flex items-center gap-4">
         {/* Thumbnail & Play Overlay */}
         <div className="relative w-16 h-16 rounded-sm overflow-hidden flex-shrink-0 border border-white/10 group bg-black/20 flex items-center justify-center">
-          {track.coverArt && track.coverArt !== "/images/default-cover.jpg" ? (
-            <img src={track.coverArt} alt={track.title} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+          {track.coverArt && !imgError ? (
+            <img 
+              src={track.coverArt} 
+              alt={track.title} 
+              className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+              onError={() => setImgError(true)}
+            />
           ) : (
             <Music className="text-white/20" size={24} />
           )}

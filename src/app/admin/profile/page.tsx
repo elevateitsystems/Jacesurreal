@@ -1,8 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import AdminSidebar from '../components/AdminSidebar';
 import { Shield, Key, Mail, Plus, Trash2, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ProfileSettings() {
   const [emails, setEmails] = useState<string[]>([]);
@@ -13,7 +24,10 @@ export default function ProfileSettings() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  
+  // Delete Confirmation
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [emailToDelete, setEmailToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -35,15 +49,10 @@ export default function ProfileSettings() {
     }
   };
 
-  const showMessage = (type: "success" | "error", text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage({ type: "", text: "" }), 5000);
-  };
-
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      return showMessage("error", "New passwords do not match");
+      return toast.error("New passwords do not match");
     }
 
     setIsActionLoading(true);
@@ -59,15 +68,15 @@ export default function ProfileSettings() {
       });
       const data = await response.json();
       if (response.ok) {
-        showMessage("success", "Password updated successfully");
+        toast.success("Password updated successfully");
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       } else {
-        showMessage("error", data.error || "Failed to update password");
+        toast.error(data.error || "Failed to update password");
       }
     } catch (error) {
-      showMessage("error", "An error occurred");
+      toast.error("An error occurred");
     } finally {
       setIsActionLoading(false);
     }
@@ -89,45 +98,53 @@ export default function ProfileSettings() {
       });
       const data = await response.json();
       if (response.ok) {
-        showMessage("success", "Email added successfully");
+        toast.success("Email added successfully");
         setNewEmail("");
         fetchProfile();
       } else {
-        showMessage("error", data.error || "Failed to add email");
+        toast.error(data.error || "Failed to add email");
       }
     } catch (error) {
-      showMessage("error", "An error occurred");
+      toast.error("An error occurred");
     } finally {
       setIsActionLoading(false);
     }
   };
 
-  const handleDeleteEmail = async (emailToDelete: string) => {
+  const handleDeleteEmail = (email: string) => {
     if (emails.length <= 1) {
-      return showMessage("error", "You must add a new email before deleting the current one.");
+      return toast.error("You must add a new email before deleting the current one.");
     }
+    setEmailToDelete(email);
+    setShowDeleteDialog(true);
+  };
 
-    if (!confirm(`Are you sure you want to remove ${emailToDelete}?`)) return;
-
+  const executeDeleteEmail = async () => {
+    if (!emailToDelete) return;
+    
+    const email = emailToDelete;
+    setEmailToDelete(null);
+    setShowDeleteDialog(false);
     setIsActionLoading(true);
+
     try {
       const response = await fetch("/api/auth/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "deleteEmail",
-          email: emailToDelete
+          email: email
         }),
       });
       const data = await response.json();
       if (response.ok) {
-        showMessage("success", "Email removed successfully");
+        toast.success("Email removed successfully");
         fetchProfile();
       } else {
-        showMessage("error", data.error || "Failed to delete email");
+        toast.error(data.error || "Failed to delete email");
       }
     } catch (error) {
-      showMessage("error", "An error occurred");
+      toast.error("An error occurred");
     } finally {
       setIsActionLoading(false);
     }
@@ -142,15 +159,6 @@ export default function ProfileSettings() {
           <h1 className="text-5xl font-bebas tracking-widest text-white mb-2">PROFILE SETTINGS</h1>
           <p className="text-white/40 uppercase tracking-widest text-sm font-medium">Manage your administrative identity</p>
         </header>
-
-        {message.text && (
-          <div className={`mb-8 p-4 rounded-sm flex items-center gap-3 border ${
-            message.type === "success" ? "bg-green-500/10 border-green-500/20 text-green-500" : "bg-red-500/10 border-red-500/20 text-red-500"
-          }`}>
-            {message.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-            <span className="text-[0.7rem] uppercase tracking-widest font-bold">{message.text}</span>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Email Management */}
@@ -249,6 +257,28 @@ export default function ProfileSettings() {
             </form>
           </div>
         </div>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="bg-surface border-white/10 text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-3xl font-bebas tracking-widest">REMOVE EMAIL?</AlertDialogTitle>
+              <AlertDialogDescription className="text-white/40 font-medium tracking-wide uppercase text-xs">
+                Are you sure you want to remove {emailToDelete?.toUpperCase()}? You will no longer be able to use this email for administrative access.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-8 gap-4">
+              <AlertDialogCancel className="bg-transparent border-white/5 text-white/40 hover:bg-white/5 hover:text-white rounded-sm font-bebas tracking-widest uppercase transition-all">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={executeDeleteEmail}
+                className="bg-primary text-white hover:bg-opacity-90 rounded-sm font-bebas tracking-widest uppercase transition-all shadow-[0_0_20px_rgba(255,45,85,0.2)]"
+              >
+                Confirm Removal
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

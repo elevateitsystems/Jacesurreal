@@ -1,10 +1,21 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import AdminSidebar from '../components/AdminSidebar';
 import { Search, Plus, Edit2, Trash2, Play, Calendar, BarChart2, Music, Filter } from 'lucide-react';
 import { TableRowSkeleton } from '@/components/Skeleton';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Track {
   _id: string;
@@ -12,6 +23,7 @@ interface Track {
   coverArt: string;
   plays: number;
   date: string;
+  duration?: number;
   createdAt: string;
 }
 
@@ -37,6 +49,17 @@ export default function VaultManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [sortByDate, setSortByDate] = useState(false);
+
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+  
+  // Delete Confirmation
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     fetchTracks();
@@ -69,17 +92,28 @@ export default function VaultManagement() {
     return result;
   }, [searchQuery, tracks, sortByDate]);
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this track from the vault?')) {
-      try {
-        const response = await fetch(`/api/music/${id}`, { method: "DELETE" });
-        if (response.ok) {
-          setTracks(prev => prev.filter(t => t._id !== id));
-        }
-      } catch (error) {
-        alert("Failed to delete track");
-      }
-    }
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
+    setShowDeleteDialog(true);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteId) return;
+    
+    const id = deleteId;
+    setDeleteId(null);
+    setShowDeleteDialog(false);
+
+    const deletePromise = fetch(`/api/music/${id}`, { method: "DELETE" });
+    
+    toast.promise(deletePromise, {
+      loading: 'Deleting artifact...',
+      success: () => {
+        setTracks(prev => prev.filter(t => t._id !== id));
+        return 'Artifact purged from the vault';
+      },
+      error: 'Failed to delete artifact',
+    });
   };
 
   return (
@@ -138,7 +172,12 @@ export default function VaultManagement() {
                     <div className="flex items-center gap-6 text-white/30 text-xs font-bold uppercase tracking-widest">
                       <span className="flex items-center gap-1.5"><Play size={12} className="text-primary" /> {track.plays?.toLocaleString() || 0} Plays</span>
                       <span className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(track.date).toLocaleDateString()}</span>
-                      <span className="flex items-center gap-1.5"><BarChart2 size={12} /> ID: {track._id.slice(-6)}</span>
+                      <span className="flex items-center gap-1.5">
+                        <Music size={12} /> {formatDuration(track.duration)}
+                        {(!track.duration || track.duration === 0) && (
+                          <span className="ml-1 text-primary text-[0.6rem] animate-pulse">(MISSING)</span>
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -168,6 +207,28 @@ export default function VaultManagement() {
             </div>
           )}
         </div>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="bg-surface border-white/10 text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-3xl font-bebas tracking-widest">DELETE ARTIFACT?</AlertDialogTitle>
+              <AlertDialogDescription className="text-white/40 font-medium tracking-wide uppercase text-xs">
+                This action is permanent. This artifact will be purged from the sonic archive forever.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-8 gap-4">
+              <AlertDialogCancel className="bg-transparent border-white/5 text-white/40 hover:bg-white/5 hover:text-white rounded-sm font-bebas tracking-widest uppercase transition-all">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={executeDelete}
+                className="bg-primary text-white hover:bg-opacity-90 rounded-sm font-bebas tracking-widest uppercase transition-all shadow-[0_0_20px_rgba(255,45,85,0.2)]"
+              >
+                Purge Artifact
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

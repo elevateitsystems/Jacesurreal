@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
-// GET: Fetch all music tracks (with optional sorting/filtering)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -18,13 +17,27 @@ export async function GET(request: Request) {
       sort = { date: -1 };
     }
 
+    // PROJECT: Explicitly exclude audioUrl and coverArt if they contain base64 data
+    // To be safe and fast, we'll exclude them entirely and have the frontend use proxies
     const tracks = await db
       .collection("tracks")
-      .find(query)
+      .find(query, {
+        projection: {
+          audioUrl: 0,
+          coverArt: 0
+        }
+      })
       .sort(sort)
       .toArray();
 
-    return NextResponse.json(tracks);
+    // Map the tracks to use the streaming proxy URLs
+    const optimizedTracks = tracks.map((t) => ({
+      ...t,
+      audioUrl: `/api/music/${t._id}/audio`,
+      coverArt: `/api/music/${t._id}/cover`,
+    }));
+
+    return NextResponse.json(optimizedTracks);
   } catch (error: any) {
     console.error("Music GET error:", error);
     return NextResponse.json({ error: "Failed to fetch music" }, { status: 500 });
