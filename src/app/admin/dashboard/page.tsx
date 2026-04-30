@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import { mockMonthlyAnalytics, mockStats, mockTracks } from '@/lib/mockData';
+import { Calendar, Heart, Music, Play, Users } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
-import { mockStats, mockMonthlyAnalytics, mockTracks } from '@/lib/mockData';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Music, Play, Heart, Users, TrendingUp, Calendar } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(mockMonthlyAnalytics.length - 1); // Default to latest month
@@ -65,60 +64,6 @@ export default function AdminDashboard() {
               <p className="text-3xl font-bebas text-white tracking-wider">{stat.value}</p>
             </div>
           ))}
-        </div>
-
-        {/* 1-31 Day Chart Section */}
-        <div className="bg-surface border border-white/5 p-8 rounded-sm mb-12">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h3 className="text-2xl font-bebas tracking-widest text-white">DAILY PLAYBACK HISTORY</h3>
-              <p className="text-primary text-[0.6rem] uppercase tracking-[0.3em] font-bold mt-1">Viewing cycle: {currentMonthData.month} 1 - {currentMonthData.data.length}</p>
-            </div>
-            <div className="flex items-center gap-4 text-[0.6rem] font-bold uppercase tracking-widest text-white/30">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-primary rounded-full" /> High Engagement
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-white/10 rounded-full" /> Baseline
-              </div>
-            </div>
-          </div>
-          <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={currentMonthData.data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff03" vertical={false} />
-                <XAxis 
-                  dataKey="day" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#ffffff20', fontSize: 10, fontWeight: 600 }} 
-                  dy={10}
-                  interval={1}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#ffffff20', fontSize: 10, fontWeight: 600 }}
-                />
-                <Tooltip 
-                  cursor={{ fill: '#ffffff05' }}
-                  contentStyle={{ backgroundColor: '#000', border: '1px solid #ffffff10', borderRadius: '2px', fontFamily: 'var(--font-outfit)' }}
-                  itemStyle={{ color: '#ff2d55', fontSize: '12px', fontWeight: 'bold' }}
-                  labelStyle={{ color: '#fff', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                  labelFormatter={(value) => `Day ${value}`}
-                />
-                <Bar dataKey="plays" radius={[2, 2, 0, 0]}>
-                  {currentMonthData.data.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.plays > 400 ? '#ff2d55' : '#ffffff10'} 
-                      className="hover:fill-white transition-all duration-300"
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
         </div>
 
         {/* Rankings Grid */}
