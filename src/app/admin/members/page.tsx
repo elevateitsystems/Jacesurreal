@@ -1,8 +1,19 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import AdminSidebar from '../components/AdminSidebar';
 import { Trash2, Mail, Phone, DollarSign, ChevronLeft, ChevronRight, ArrowUpDown, Loader2, Users, UserX } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SuperPhoneContact {
   id: string;
@@ -25,6 +36,10 @@ export default function MembersManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // Delete Confirmation
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,19 +104,27 @@ export default function MembersManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to permanently remove this contact from SuperPhone?')) return;
+  const handleDelete = (id: string) => {
+    setMemberToDelete(id);
+    setShowDeleteDialog(true);
+  };
 
+  const executeDelete = async () => {
+    if (!memberToDelete) return;
+    
+    const id = memberToDelete;
+    setMemberToDelete(null);
+    setShowDeleteDialog(false);
     setDeletingId(id);
+    
     try {
       const res = await fetch(`/api/contact?id=${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        throw new Error('DELETE_FAILED');
-      }
+      if (!res.ok) throw new Error('DELETE_FAILED');
       setContacts(prev => prev.filter(c => c.id !== id));
-    } catch (err: any) {
+      toast.success('Contact removed successfully');
+    } catch (err) {
       console.error('Delete contact error:', err);
-      alert('Unable to remove this contact. Please try again later.');
+      toast.error('Unable to remove this contact.');
     } finally {
       setDeletingId(null);
     }
@@ -279,6 +302,28 @@ export default function MembersManagement() {
             </button>
           </div>
         )}
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="bg-surface border-white/10 text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-3xl font-bebas tracking-widest">REMOVE CONTACT?</AlertDialogTitle>
+              <AlertDialogDescription className="text-white/40 font-medium tracking-wide uppercase text-xs">
+                This will permanently delete the contact from your SuperPhone CRM. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-8 gap-4">
+              <AlertDialogCancel className="bg-transparent border-white/5 text-white/40 hover:bg-white/5 hover:text-white rounded-sm font-bebas tracking-widest uppercase transition-all">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={executeDelete}
+                className="bg-primary text-white hover:bg-opacity-90 rounded-sm font-bebas tracking-widest uppercase transition-all shadow-[0_0_20px_rgba(255,45,85,0.2)]"
+              >
+                Confirm Removal
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

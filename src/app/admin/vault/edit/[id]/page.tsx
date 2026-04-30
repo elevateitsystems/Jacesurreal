@@ -1,12 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import AdminSidebar from '../../../components/AdminSidebar';
 import { Save, ArrowLeft, Trash2, Upload, ImageIcon, Music, Loader2 } from 'lucide-react';
 import { Skeleton, FormSkeleton } from '@/components/Skeleton';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import * as mm from "music-metadata-browser";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Track {
   _id: string;
@@ -33,6 +44,9 @@ export default function EditVault() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  
+  // Delete Confirmation
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const [thumbMode, setThumbMode] = useState<"link" | "local">("link");
   const [audioMode, setAudioMode] = useState<"link" | "local">("link");
@@ -43,20 +57,19 @@ export default function EditVault() {
 
   const fetchTrack = async () => {
     try {
-      const response = await fetch("/api/music");
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        const found = data.find(t => t._id === id);
-        if (found) {
-          setTrack(found);
-          setTitle(found.title);
-          setAudioUrl(found.audioUrl);
-          setCoverArt(found.coverArt);
-          setDate(new Date(found.date).toISOString().split('T')[0]);
-          if (found.audioUrl?.startsWith('data:')) setAudioMode("local");
-          if (found.coverArt?.startsWith('data:')) setThumbMode("local");
-        }
-      }
+      const response = await fetch(`/api/music/${id}`);
+      if (!response.ok) throw new Error("Failed to fetch");
+      const found = await response.json();
+      
+      setTrack(found);
+      setTitle(found.title);
+      setAudioUrl(found.audioUrl);
+      setCoverArt(found.coverArt);
+      setDuration(found.duration || 0);
+      setDate(new Date(found.date).toISOString().split('T')[0]);
+      
+      if (found.audioUrl?.startsWith('data:')) setAudioMode("local");
+      if (found.coverArt?.startsWith('data:')) setThumbMode("local");
     } catch (err) {
       setError("Failed to fetch track details");
     } finally {
@@ -117,11 +130,12 @@ export default function EditVault() {
           audioUrl,
           coverArt: coverArt || undefined,
           date,
-          duration: duration || track?.plays // Placeholder fallback
+          duration: duration // Ensure the actual duration is sent
         }),
       });
 
       if (response.ok) {
+        toast.success("Artifact updated");
         router.push("/admin/vault");
       } else {
         const data = await response.json();
@@ -134,17 +148,22 @@ export default function EditVault() {
     }
   };
 
-  const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this track?')) {
-      try {
-        const response = await fetch(`/api/music/${id}`, { method: "DELETE" });
-        if (response.ok) {
-          router.push("/admin/vault");
-        }
-      } catch (err) {
-        alert("Failed to delete track");
-      }
-    }
+  const handleDelete = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const executeDelete = async () => {
+    setShowDeleteDialog(false);
+    const deletePromise = fetch(`/api/music/${id}`, { method: "DELETE" });
+    
+    toast.promise(deletePromise, {
+      loading: 'Deleting artifact...',
+      success: () => {
+        router.push("/admin/vault");
+        return 'Artifact purged from the vault';
+      },
+      error: 'Failed to delete artifact',
+    });
   };
 
   if (isLoading) {
@@ -274,6 +293,28 @@ export default function EditVault() {
             </div>
           </form>
         </div>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="bg-surface border-white/10 text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-3xl font-bebas tracking-widest">DELETE ARTIFACT?</AlertDialogTitle>
+              <AlertDialogDescription className="text-white/40 font-medium tracking-wide uppercase text-xs">
+                This action is permanent. This artifact will be purged from the sonic archive forever.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-8 gap-4">
+              <AlertDialogCancel className="bg-transparent border-white/5 text-white/40 hover:bg-white/5 hover:text-white rounded-sm font-bebas tracking-widest uppercase transition-all">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={executeDelete}
+                className="bg-primary text-white hover:bg-opacity-90 rounded-sm font-bebas tracking-widest uppercase transition-all shadow-[0_0_20px_rgba(255,45,85,0.2)]"
+              >
+                Purge Artifact
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

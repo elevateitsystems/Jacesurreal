@@ -42,6 +42,14 @@ export default function Home() {
         if (prev && !prev.duration && audio.duration) {
           const newDur = audio.duration;
           setTracks(tPrev => tPrev.map(t => t.id === prev.id ? { ...t, duration: newDur } : t));
+          
+          // Save duration to database if it was missing
+          fetch(`/api/music/${prev.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ duration: newDur }),
+          }).catch(console.error);
+
           return { ...prev, duration: newDur };
         }
         return prev;

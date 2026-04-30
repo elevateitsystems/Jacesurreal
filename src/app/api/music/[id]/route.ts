@@ -2,6 +2,29 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const client = await clientPromise;
+    const db = client.db();
+
+    const track = await db.collection("tracks").findOne({
+      _id: new ObjectId(id),
+    });
+
+    if (!track) {
+      return NextResponse.json({ error: "Track not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(track);
+  } catch (error: any) {
+    return NextResponse.json({ error: "Failed to fetch track" }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -70,20 +93,30 @@ export async function PATCH(
     const db = client.db();
 
     let update: any = {};
+    const setUpdates: any = {};
+
+    if (body.duration !== undefined) {
+      setUpdates.duration = body.duration;
+    }
+
     if (increments) {
-      update = { $inc: increments };
+      update.$inc = increments;
     } else if (action === 'like') {
-      update = { $inc: { likes: 1 } };
+      update.$inc = { likes: 1 };
     } else if (action === 'unlike') {
-      update = { $inc: { likes: -1 } };
+      update.$inc = { likes: -1 };
     } else if (action === 'dislike') {
-      update = { $inc: { dislikes: 1 } };
+      update.$inc = { dislikes: 1 };
     } else if (action === 'undislike') {
-      update = { $inc: { dislikes: -1 } };
+      update.$inc = { dislikes: -1 };
     } else if (action === 'play') {
-      update = { $inc: { plays: 1 } };
-    } else {
+      update.$inc = { plays: 1 };
+    } else if (Object.keys(setUpdates).length === 0) {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    }
+
+    if (Object.keys(setUpdates).length > 0) {
+      update.$set = setUpdates;
     }
 
     const result = await db.collection("tracks").updateOne(
