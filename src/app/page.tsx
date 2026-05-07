@@ -6,6 +6,7 @@ import HeroCard from "@/components/HeroCard";
 import MusicSection from "@/components/MusicSection";
 import MusicPlayer from "@/components/MusicPlayer";
 import ContactUs from "@/components/ContactUs";
+import Footer from "@/components/Footer";
 import useToast from "@/lib/useToast";
 import { Disc, Search } from "lucide-react";
 import { HeroCardSkeleton, MusicCardSkeleton } from "@/components/Skeleton";
@@ -433,13 +434,7 @@ export default function Home() {
 
       <ContactUs />
 
-      <footer className="py-12 border-t border-white/5 mt-20">
-        <div className="container mx-auto px-6 text-center">
-          <p className="text-white/20 text-[0.6rem] tracking-[0.5em] uppercase font-bold">
-            © 2025 JACE SURREAL • SONIC ARCHIVE • CONNECTED TO SUPERPHONE
-          </p>
-        </div>
-      </footer>
+      <Footer />
 
       <MusicPlayer
         track={currentTrack}
